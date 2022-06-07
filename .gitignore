@@ -36,8 +36,6 @@ out/
 .gradle/
 build/
 lib/
-gradle/
-gradlew
-gradlew.bat
+
 
 
