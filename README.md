@@ -1,4 +1,5 @@
 # dichotomy
 Either and Result monadic types for Java
 
-TODO: nice intro, and make this repository public
+TODO: nice intro, and make this repository public 
+also do CI
