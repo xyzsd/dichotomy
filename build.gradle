@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'net.xyzsd'
-version '0.9.0-SNAPSHOT'
+version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
