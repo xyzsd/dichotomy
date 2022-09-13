@@ -1,6 +1,7 @@
 plugins {
     id("java-library")
     id("maven-publish")
+    signing
 }
 
 group = "net.xyzsd"
