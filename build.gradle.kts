@@ -16,6 +16,11 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
@@ -50,6 +55,17 @@ publishing {
                 }
             }
         }
+    }
+}
+
+signing {
+    sign(publishing.publications["GitHubPackages"])
+}
+
+// JavaDoc options
+tasks.javadoc {
+    if (JavaVersion.current().isJava9Compatible) {
+        (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
 }
 
