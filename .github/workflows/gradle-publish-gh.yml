@@ -27,13 +27,9 @@ jobs:
       uses: gradle/gradle-build-action@v2
       with:
           arguments: build
-
-    # The USERNAME and TOKEN need to correspond to the credentials environment variables used in
-    # the publishing section of your build.gradle
     - name: Publish to GitHub Packages
       uses: gradle/gradle-build-action@v2
       with:
         arguments: publish
       env:
-        USERNAME: ${{ github.actor }}
-        TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
