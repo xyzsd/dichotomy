@@ -1,9 +1,14 @@
+// see: 
+//      https://docs.github.com/en/actions/publishing-packages/publishing-java-packages-with-gradle
+//      https://docs.gradle.org/current/userguide/publishing_maven.html
+
 plugins {
     id("java-library")
     id("maven-publish")
     signing
 }
 
+// TODO: move these to gradle.properties
 group = "net.xyzsd"
 version = "0.8-SNAPSHOT"
 
@@ -28,7 +33,7 @@ tasks.getByName<Test>("test") {
 
 publishing {
     publications {
-        create<MavenPublication>("GitHubPackages") {
+        create<MavenPublication>("mavenJava") {
             from(components["java"])
             
             pom {
@@ -54,13 +59,32 @@ publishing {
                         email.set("xyzsd@xyzsd.net")
                     }
                 }
+                
+                scm {
+                        connection.set("scm:git:git://github.com/xyzsd/dichotomy.git")
+                        developerConnection.set("scm:git:ssh://git@github.com:xyzsd/dichotomy.git")
+                        url.set("https://github.com/xyzsd/dichotomy")
+                }
             }
         }
+    }
+    
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/xyzsd/dichotomy")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }  
+        }
+        
+        // todo: maven{} section for OSSRH
     }
 }
 
 signing {
-    sign(publishing.publications["GitHubPackages"])
+    sign(publishing.publications["mavenJava"])
 }
 
 // JavaDoc options
