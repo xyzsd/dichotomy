@@ -14,12 +14,47 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 
-// using 'Err' instead of Error to avoid conflict with java.lang.Error
-// consider longer letters e.g. VALUE and ERR or VAL and ERR <VAL,ERR>
-// and for new types <NEW_VAL, NEW_ERR> etc.
-//
-// also doc that 'Err' does NOT have to be an exception!!
-
+/**
+ * A {@code Result} type.
+ * <p>
+ * A {@code Result} is typically the return value of a method, and can be one of two values,
+ * each of which can have its own non-null type
+ * <ul>
+ *     <li>OK: Success</li>
+ *     <li>Err: Failure</li>
+ * </ul>
+ * If there is no associated type, use the {@link None} type rather than {@link Void}.
+ * <p>
+ * For example:
+ * <pre>
+ * {@code
+ *      Result<String, Exception> myMethod(String input) {
+ *           if ("hello".equals(input) ) {
+ *              return Result.ofOK("Hello!");
+ *           }
+ *           return Result.ofErr(new IllegalArgumentException(input));
+ *      }
+ *
+ *      ...
+ *
+ *      Result<String,Exception> result = myMethod("hello");
+ *
+ *      switch(result) {
+ *          case OK success -> System.out.println(success.get());
+ *          case Err err -> throw err.get();
+ *      }
+ *
+ *
+ *
+ * }
+ * </pre>
+ *
+ * While {@link Result}s can be used with switch() statements (particularly the new {@code switch} syntax),
+ * they can be used in functional code by mapping, flatMapping (joining), folds, etc.
+ *
+ * @param <V> The Success type.
+ * @param <E> THe Failure (error) type. Does not have to be an Exception.
+ */
 public sealed interface Result<V, E> extends Box<V, E> permits OK, Err {
 
     /**
@@ -81,7 +116,7 @@ public sealed interface Result<V, E> extends Box<V, E> permits OK, Err {
      * For a given {@code Optional<V>}:
      *     <ul>
      *     <li>{@link Optional#empty()} is considered failure and becomes {@code Err<None>}.</li>
-     *     <li>{@code <V} is considered successful, and becomes {@code OK<E>}.</li>
+     *     <li>{@code <V>} is considered successful, and becomes {@code OK<V>}.</li>
      *     </ul>
      * <p>
      *     If the opposite behavior is desired ({@code null} is successful, and

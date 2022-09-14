@@ -15,7 +15,17 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-
+/**
+ * A right-biased Either monad implementation.
+ * <p>
+ * (todo: better explanation and examples)
+ *
+ * <p>
+ * (todo: explanation of right-bias)
+ *
+ * @param <L> The left-hand value (by convention, this is the failure/unsuccessful value)
+ * @param <R> The right-hand value (by convention, the success value)
+ */
 // opinionated : no null for L or R
 // sealed: can use in switch()
 // biased: right (typically error value in left)
@@ -115,6 +125,8 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
                                            @NotNull Function<? super R, ? extends R2> fnRight);
 
 
+
+
     /**
      * Returns an {@link Either}, produced from one of the appropriate mapping functions.
      * <p>
@@ -151,6 +163,8 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      */
     @NotNull <T> T fold(@NotNull Function<? super L, ? extends T> fnLeft,
                         @NotNull Function<? super R, ? extends T> fnRight);
+
+
 
 
     /**

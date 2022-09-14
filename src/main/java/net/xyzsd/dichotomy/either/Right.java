@@ -25,7 +25,7 @@ public record Right<L, R>(@NotNull R value) implements Either<L, R> {
      * Create a Right value.
      */
     public Right {
-        requireNonNull( value, "Right: value is null!" );
+        requireNonNull( value, "Right: value cannot be null!" );
     }
 
     /**
