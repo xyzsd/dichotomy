@@ -4,8 +4,8 @@
 Either and Result monadic types for Java
 
 ## TODO: 
-    * finish docs
-    * nice intro
-    * CI / actions
-    * make public 
+    * finish docs (particularly package docs, usage examples)
+    * nice intro (with synopsis and short examples)
+    * CI / actions   *in progress*
+    
 
