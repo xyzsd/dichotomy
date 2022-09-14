@@ -84,7 +84,10 @@ publishing {
 }
 
 signing {
-    useInMemoryPgpKeys(findProperty("SIGNING_KEY_ID"), findProperty("SIGNING_KEY_PRIVATE"), findProperty("SIGNING_KEY_PASSPHRASE"))
+    val signingKeyId: String? = System.getenv("SIGNING_KEY_ID")
+    val signingKey: String? = System.getenv("SIGNING_KEY_PRIVATE")
+    val signingKeyPassphrase: String? = System.getenv("SIGNING_KEY_PASSPHRASE")
+    useInMemoryPgpKeys(signingKeyId, signingKey, signingKeyPassphrase)
     sign(publishing.publications["mavenJava"])
 }
 
