@@ -6,6 +6,6 @@ Either and Result monadic types for Java
 ## TODO: 
     * finish docs (particularly package docs, usage examples)
     * nice intro (with synopsis and short examples)
-    * CI / actions   *in progress*
+    * CI / actions   *in progress* (working on code signing)
     
 
