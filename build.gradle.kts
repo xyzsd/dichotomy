@@ -84,6 +84,7 @@ publishing {
 }
 
 signing {
+    useInMemoryPgpKeys(findProperty("SIGNING_KEY_ID"), findProperty("SIGNING_KEY_PRIVATE"), findProperty("SIGNING_KEY_PASSPHRASE"))
     sign(publishing.publications["mavenJava"])
 }
 
