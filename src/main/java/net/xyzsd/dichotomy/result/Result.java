@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  * each of which can have its own non-null type
  * <ul>
  *     <li>OK: Success</li>
- *     <li>Err: Failure</li>
+ *     <li>Err: Failure (not required to be an {@link Exception})</li>
  * </ul>
  * If there is no associated type, use the {@link None} type rather than {@link Void}.
  * <p>
