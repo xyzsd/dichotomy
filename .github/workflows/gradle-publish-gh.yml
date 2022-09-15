@@ -34,7 +34,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SIGNING_KEY_PRIVATE: ${{ secrets.SIGNING_KEY_PRIVATE }}
-        SIGNING_KEY_PASSPHRASE: ${{ secrets.SECRET_TEST }}
+        SIGNING_KEY_PASSPHRASE: ${{ secrets.SIGNING_KEY_PASSPHRASE }}
         TEST: ${{ secrets.REP_TEST }}
-        SECRET_TEST: ${{ secrets.SECRET_TEST }}
 
