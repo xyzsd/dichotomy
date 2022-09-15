@@ -69,6 +69,7 @@ publishing {
     }
     
     repositories {
+        /*
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/xyzsd/dichotomy")
@@ -77,8 +78,20 @@ publishing {
                 password = System.getenv("GITHUB_TOKEN")
             }  
         }
+        */
         
-        // todo: maven{} section for OSSRH
+        maven {
+            name = "OSSRH"
+            
+            val releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            val snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
+        
+            credentials {
+                    username = System.getenv("OSSRH_USERNAME")
+                    password = System.getenv("OSSRH_PASSWORD")
+                }
+        }
     }
 }
 
