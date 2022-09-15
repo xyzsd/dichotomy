@@ -35,5 +35,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SIGNING_KEY_PRIVATE: ${{ secrets.SIGNING_KEY_PRIVATE }}
         SIGNING_KEY_PASSPHRASE: ${{ secrets.SIGNING_KEY_PASSPHRASE }}
-        TEST: ${{ secrets.REP_TEST }}
+        OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
 
