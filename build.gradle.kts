@@ -8,9 +8,6 @@ plugins {
     signing
 }
 
-// TODO: move these to gradle.properties
-group = "net.xyzsd"
-version = "0.8-SNAPSHOT"
 
 repositories {
     mavenCentral()
