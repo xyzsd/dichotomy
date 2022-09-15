@@ -35,7 +35,7 @@ publishing {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
             artifact(tasks["sourcesJar"])
-            artifact(tasks["jourcesJar"])
+            artifact(tasks["javadocJar"])
             
             pom {
                 name.set("dichotomy")
