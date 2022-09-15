@@ -1,5 +1,5 @@
 
-name: Build and Publish to Github Packages
+name: Build and Publish
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
       uses: gradle/gradle-build-action@v2
       with:
           arguments: build
-    - name: Publish to GitHub Packages
+    - name: Publish (OSSRH)
       uses: gradle/gradle-build-action@v2
       with:
         arguments: publish

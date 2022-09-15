@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "net.xyzsd"
-version = "0.82-SNAPSHOT"
+version = "0.9"
 
 repositories {
     mavenCentral()
@@ -69,17 +69,6 @@ publishing {
     }
     
     repositories {
-        /*
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/xyzsd/dichotomy")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }  
-        }
-        */
-        
         maven {
             name = "OSSRH"
             
