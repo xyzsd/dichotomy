@@ -91,7 +91,7 @@ signing {
     println("TESTING:")
     println(System.getenv("TEST"))
     println("---")
-    println(System.getenv("REP_TEST"))
+    println(System.getenv("SIGNING_KEY_PRIVATE"))
     useInMemoryPgpKeys(signingKey, signingKeyPassphrase)
     sign(publishing.publications["mavenJava"])
 }
