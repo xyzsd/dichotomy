@@ -88,6 +88,10 @@ signing {
     val signingKeyPassphrase: String? = System.getenv("SIGNING_KEY_PASSPHRASE")
     println("SK:")
     println(signingKey)
+    println("TESTING:")
+    println(System.getenv("TEST"))
+    println("---")
+    println(System.getenv("REP_TEST"))
     useInMemoryPgpKeys(signingKey, signingKeyPassphrase)
     sign(publishing.publications["mavenJava"])
 }
