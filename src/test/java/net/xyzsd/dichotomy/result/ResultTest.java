@@ -1,7 +1,11 @@
 package net.xyzsd.dichotomy.result;
 
-import org.junit.jupiter.api.Test;
 import net.xyzsd.dichotomy.None;
+import net.xyzsd.dichotomy.Result;
+import static net.xyzsd.dichotomy.Result.OK;
+import static net.xyzsd.dichotomy.Result.Err;
+
+import org.junit.jupiter.api.Test;
 import net.xyzsd.dichotomy.either.EitherTest.SingleUseConsumer;
 
 import java.io.IOException;
@@ -73,10 +77,10 @@ class ResultTest {
     void ofNullable() {
         // this test assumes that other method tests pass
         Result<String, None> resultFromNull = Result.ofNullable( null );
-        assertTrue( resultFromNull.isErr() );
+        assertTrue( resultFromNull instanceof Err );
 
         Result<String, None> resultNotNull = Result.ofNullable( OK_VALUE );
-        assertTrue( resultNotNull.isOK() );
+        assertTrue( resultNotNull instanceof OK);
     }
 
 
@@ -84,10 +88,10 @@ class ResultTest {
     void from() {
         // this test assumes that other method tests pass
         Result<String, None> resultFromEmpty = Result.from( Optional.<String>empty() );
-        assertTrue( resultFromEmpty.isErr() );
+        assertTrue( resultFromEmpty instanceof Err );
 
         Result<String, None> result = Result.from( Optional.of( OK_VALUE ) );
-        assertTrue( result.isOK() );
+        assertTrue( result instanceof OK );
     }
 
     @Test
@@ -99,88 +103,23 @@ class ResultTest {
         assertThrows( NullPointerException.class, () -> {Result.ofErr( null );} );
     }
 
-    @Test
-    void attempt() {
-        // todo
-    }
-
-    @Test
-    void testAttempt() {
-        // todo
-    }
-
-    @Test
-    void withAttempt() {
-        // todo
-    }
-
-    @Test
-    void testWithAttempt() {
-        // todo
-    }
-
-    @Test
-    void isOK() {
-        assertTrue( OK.isOK() );
-        assertFalse( OK.isErr() );
-    }
-
-    @Test
-    void isFailure() {
-        assertTrue( ERR.isErr() );
-        assertFalse( ERR.isOK() );
-    }
-
-    @Test
-    void ok() {
-        assertEquals( Optional.of( OK_VALUE ), OK.left() );
-        assertTrue( OK.right().isEmpty() );
-    }
-
-    @Test
-    void err() {
-        assertEquals( Optional.of( ERR_VALUE ), ERR.right() );
-        assertTrue( ERR.left().isEmpty() );
-    }
-
-    @Test
-    void left() {
-        assertEquals( Optional.of( OK_VALUE ), OK.left() );
-        assertTrue( OK.right().isEmpty() );
-        assertEquals( OK.err(), OK.right() );
-        assertEquals( OK.ok(), OK.left() );
-    }
-
-    @Test
-    void right() {
-        assertEquals( Optional.of( ERR_VALUE ), ERR.right() );
-        assertTrue( ERR.left().isEmpty() );
-        assertEquals( ERR.err(), ERR.right() );
-        assertEquals( ERR.ok(), ERR.left() );
-    }
 
     @Test
     void swap() {
         Result<String, String> left = Result.ofOK( "ok!" );
-        assertTrue( left.isOK() );
+        assertTrue( left.contains( "ok!" ) );
         Result<String, String> leftSwap = left.swap();      // ok -> err (left->right)
-        assertTrue( leftSwap.isErr() );
         assertTrue( leftSwap.containsErr( "ok!" ) );
-        assertTrue( left.isOK() );  // ensure original unchanged
+        assertTrue( left.contains( "ok!" ) );   // ensure original unchanged
 
         Result<String, String> right = Result.ofErr( "error!" );
-        assertTrue( right.isErr() );
+        assertTrue( right.containsErr( "error!" ) );
         Result<String, String> rightSwap = right.swap();
-        assertTrue( rightSwap.isOK() );
         assertTrue( rightSwap.contains( "error!" ) );
-        assertTrue( right.isErr() );    // ensure original unchanged
+        assertTrue( rightSwap.contains( "error!" ) );
+        assertTrue( right.containsErr( "error!" ) ); // ensure original unchanged
     }
 
-    @Test
-    void unwrap() {
-        assertEquals( OK_VALUE, OK.unwrap() );
-        assertEquals( ERR_VALUE, ERR.unwrap() );
-    }
 
     @Test
     void biMatch() {
@@ -199,11 +138,9 @@ class ResultTest {
     @Test
     void biMap() {
         Result<String, String> mapped = OK.biMap( fnOK, fnERR2STR );
-        assertTrue( mapped.isOK() );
         assertTrue( mapped.contains( fnOK_VAL ) );
 
         mapped = ERR.biMap( fnOK, fnERR2STR );
-        assertTrue( mapped.isErr() );
         assertTrue( mapped.containsErr( fnERR_VAL.getMessage() ) );
 
         // functions must not return null
@@ -458,23 +395,23 @@ class ResultTest {
                 () -> Result.ofErr(new ArithmeticException()).expect()
         );
         assertThrows(
-                ResultException.class,
+                NoSuchElementException.class,
                 () -> Result.ofErr(new IOException()).expect()
         );
         assertThrows(
-                ResultException.class,
+                NoSuchElementException.class,
                 () -> Result.ofErr(new AssertionError()).expect()
         );
 
         // non-exceptional values
         assertThrows(
-                ResultException.class,
+                NoSuchElementException.class,
                 () -> Result.ofErr(666).expect()
         );
 
         try {
             Result.ofErr(666).expect();
-        } catch(ResultException e) {
+        } catch(NoSuchElementException e) {
             assertEquals( "666", e.getMessage() );
         }
     }
@@ -489,7 +426,7 @@ class ResultTest {
         );
         assertThrows(
                 RuntimeException.class,
-                () -> ERR.orThrowWrapped( RuntimeException::new )
+                () -> ERR.orThrow( RuntimeException::new )
         );
 
         // but also see this

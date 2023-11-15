@@ -1,6 +1,8 @@
 package net.xyzsd.dichotomy.either;
 
-import net.xyzsd.dichotomy.result.Result;
+import net.xyzsd.dichotomy.Either;
+import net.xyzsd.dichotomy.Result;
+import net.xyzsd.dichotomy.util.Conversion;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -44,20 +46,20 @@ public class EitherTest {
 
     @org.junit.jupiter.api.Test
     void ofLeft() {
-        assertEquals( Left.class, LEFT.getClass() );
-        assertEquals( LVAL, ((Left<String, Integer>) LEFT).get() );
+        assertEquals( Either.Left.class, LEFT.getClass() );
+        assertEquals( LVAL, ((Either.Left<String, Integer>) LEFT).get() );
     }
 
     @org.junit.jupiter.api.Test
     void ofRight() {
-        assertEquals( Right.class, RIGHT.getClass() );
-        assertEquals( RVAL, ((Right<String, Integer>) RIGHT).get() );
+        assertEquals( Either.Right.class, RIGHT.getClass() );
+        assertEquals( RVAL, ((Either.Right<String, Integer>) RIGHT).get() );
     }
 
     @org.junit.jupiter.api.Test
     void fromResult() {
-        assertEquals( RIGHT, Either.fromResult( Result.ofOK(RVAL)) );
-        assertEquals( LEFT, Either.fromResult( Result.ofErr(LVAL)) );
+        assertEquals( RIGHT, Conversion.toEither( Result.ofOK(RVAL)) );
+        assertEquals( LEFT, Conversion.toEither( Result.ofErr(LVAL)) );
     }
 
     @org.junit.jupiter.api.Test
@@ -72,23 +74,6 @@ public class EitherTest {
         assertTrue( RIGHT.left().isEmpty() );
     }
 
-    @org.junit.jupiter.api.Test
-    void unwrap() {
-        assertEquals( LVAL, LEFT.unwrap() );
-        assertEquals( RVAL, RIGHT.unwrap() );
-    }
-
-    @org.junit.jupiter.api.Test
-    void isLeft() {
-        assertTrue( LEFT.isLeft() );
-        assertFalse( LEFT.isRight() );
-    }
-
-    @org.junit.jupiter.api.Test
-    void isRight() {
-        assertTrue( RIGHT.isRight() );
-        assertFalse( RIGHT.isLeft() );
-    }
 
     // match(Consumer,Consumer)
     @org.junit.jupiter.api.Test
@@ -111,11 +96,9 @@ public class EitherTest {
         Function<Integer, String> fnIS = i -> "INT";
 
         Either<String, String> mapped = LEFT.biMap( fnSS, fnIS );
-        assertTrue( mapped.isLeft() );
         assertTrue( mapped.containsLeft( "STRING" ) );
 
         mapped = RIGHT.biMap( fnSS, fnIS );
-        assertTrue( mapped.isRight() );
         assertTrue( mapped.contains( "INT" ) );
 
         // functions must not return null
@@ -443,19 +426,17 @@ public class EitherTest {
     void swap() {
         Either<String, String> left = Either.ofLeft( "left" );
         Either<String, String> leftSwap = left.swap();
-        assertTrue( leftSwap.isRight() );
         assertTrue( leftSwap.contains( "left" ) );
 
         Either<String, String> right = Either.ofRight( "right" );
         Either<String, String> rightSwap = right.swap();
-        assertTrue( rightSwap.isLeft() );
         assertTrue( rightSwap.containsLeft( "right" ) );
     }
 
     @org.junit.jupiter.api.Test
     void toResult() {
-        assertEquals( Result.ofErr(LVAL),LEFT.toResult() );
-        assertEquals( Result.ofOK(RVAL), RIGHT.toResult() );
+        assertEquals( Result.ofErr(LVAL), Conversion.toResult(LEFT) );
+        assertEquals( Result.ofOK(RVAL), Conversion.toResult(RIGHT) );
     }
 
     // because we don't want illegal monads

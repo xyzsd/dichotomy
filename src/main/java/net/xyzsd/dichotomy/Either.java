@@ -1,10 +1,7 @@
-package net.xyzsd.dichotomy.either;
+package net.xyzsd.dichotomy;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import net.xyzsd.dichotomy.Box;
-import net.xyzsd.dichotomy.result.Result;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -17,6 +14,12 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A right-biased Either monad implementation.
+ * <blockquote>
+ * {@code An Either holds Left or Right values,}<br>
+ * {@code but never both or neither,}<br>
+ * {@code otherwise it'd be a tuple,}<br>
+ * {@code rather than an Either.}
+ * </blockquote>
  * <p>
  * (todo: better explanation and examples)
  *
@@ -26,12 +29,12 @@ import static java.util.Objects.requireNonNull;
  * @param <L> The left-hand value (by convention, this is the failure/unsuccessful value)
  * @param <R> The right-hand value (by convention, the success value)
  */
-// opinionated : no null for L or R
+// opinionated : no null for L or R; cannot use null (Void types not allowed; use 'None' instead)
 // sealed: can use in switch()
-// biased: right (typically error value in left)
-// note: cannot use null (Void types not allowed; use 'None' instead)
-public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
+// biased: right (typically error value in left) HOWEVER we do have xxxErr methods to operate on the left side
+// separable: everythign is defined in a single file.
 
+public sealed interface Either<L, R> permits Either.Left, Either.Right {
 
     /**
      * Create a Left {@link Either}.
@@ -57,42 +60,30 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
 
 
     /**
-     * Create an {@link Either} from a {@link Result}.
-     */
-    @NotNull
-    static <L, R> Either<L, R> fromResult(@NotNull Result<R, L> result) {
-        return result.fold( Either::ofRight, Either::ofLeft );
-    }
-
-
-    /**
      * If the {@link Either} is {@link Left}, return the value as an {@link Optional}.
      * Otherwise, return an empty {@link Optional}.
      */
-    @NotNull Optional<L> left();
+    @NotNull
+    default Optional<L> left() {
+        return switch (this) {
+            case Left(L l) -> Optional.of( l );
+            case Right(var __) -> Optional.empty();
+        };
+    }
 
     /**
      * If the {@link Either} is {@link Right}, return the value as an {@link Optional}.
      * Otherwise, return an empty {@link Optional}.
      */
-    @NotNull Optional<R> right();
+    @NotNull
+    default Optional<R> right() {
+        return switch (this) {
+            case Right(R r) -> Optional.of( r );
+            case Left(var __) -> Optional.empty();
+        };
+    }
 
-    /**
-     * Return the value contained by this {@link Either}. This may be a {@link Left} value or
-     * a {@link Right} value, but is never {@code null}.
-     */
-    @NotNull Object unwrap();
 
-
-    /**
-     * True if the {@link Either} is {@link Left}.
-     */
-    boolean isLeft();
-
-    /**
-     * True if the {@link Either} is {@link Right}.
-     */
-    boolean isRight();
 
 
     /**
@@ -104,8 +95,19 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #match(Consumer)
      * @see #matchLeft(Consumer)
      */
-    @NotNull Either<L, R> biMatch(@NotNull Consumer<? super L> leftConsumer,
-                                  @NotNull Consumer<? super R> rightConsumer);
+    @NotNull
+    default Either<L, R> biMatch(@NotNull Consumer<? super L> leftConsumer,
+                                 @NotNull Consumer<? super R> rightConsumer) {
+        requireNonNull( leftConsumer );
+        requireNonNull( rightConsumer );
+
+        switch (this) {
+            case Left(L l) -> leftConsumer.accept( l );
+            case Right(R r) -> rightConsumer.accept( r );
+        }
+
+        return this;
+    }
 
 
     /**
@@ -121,10 +123,17 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #map(Function)
      * @see #mapLeft(Function)
      */
-    @NotNull <L2, R2> Either<L2, R2> biMap(@NotNull Function<? super L, ? extends L2> fnLeft,
-                                           @NotNull Function<? super R, ? extends R2> fnRight);
+    @NotNull
+    default <L2, R2> Either<L2, R2> biMap(@NotNull Function<? super L, ? extends L2> fnLeft,
+                                          @NotNull Function<? super R, ? extends R2> fnRight) {
+        requireNonNull( fnLeft );
+        requireNonNull( fnRight );
 
-
+        return switch (this) {
+            case Left(L l) -> ofLeft( fnLeft.apply( l ) );
+            case Right(R r) -> ofRight( fnRight.apply( r ) );
+        };
+    }
 
 
     /**
@@ -135,13 +144,25 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      *
      * @param fnLeft  the mapping function for {@link Left} values.
      * @param fnRight the mapping function for {@link Right} values.
+     * @param <L2>    New {@link Left} value
+     * @param <R2>    New {@link Right} value
      * @return the {@link Either} produced from {@code fnLeft} or {@code fnRight}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #map(Function)
      * @see #mapLeft(Function)
      */
-    @NotNull <L2, R2> Either<L2, R2> biFlatMap(@NotNull Function<? super L, ? extends Either<? extends L2, ? extends R2>> fnLeft,
-                                               @NotNull Function<? super R, ? extends Either<? extends L2, ? extends R2>> fnRight);
+    @NotNull
+    @SuppressWarnings("unchecked")
+    default <L2, R2> Either<L2, R2> biFlatMap(@NotNull Function<? super L, ? extends Either<? extends L2, ? extends R2>> fnLeft,
+                                              @NotNull Function<? super R, ? extends Either<? extends L2, ? extends R2>> fnRight) {
+        requireNonNull( fnLeft );
+        requireNonNull( fnRight );
+
+        return switch (this) {
+            case Left(L l) -> (Either<L2, R2>) requireNonNull( fnLeft.apply( l ) );
+            case Right(R r) -> (Either<L2, R2>) requireNonNull( fnRight.apply( r ) );
+        };
+    }
 
 
     /**
@@ -156,15 +177,24 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      *
      * @param fnLeft  the mapping function for {@link Left} values.
      * @param fnRight the mapping function for {@link Right} values.
+     * @param <T>     common type returned by mapping functions.
      * @return the value produced from {@code fnLeft} or {@code fnRight}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #recover(Function)
      * @see #forfeit(Function)
      */
-    @NotNull <T> T fold(@NotNull Function<? super L, ? extends T> fnLeft,
-                        @NotNull Function<? super R, ? extends T> fnRight);
+    @NotNull
+    default <T> T fold(@NotNull Function<? super L, ? extends T> fnLeft,
+                       @NotNull Function<? super R, ? extends T> fnRight) {
+        requireNonNull( fnLeft );
+        requireNonNull( fnRight );
 
+        return switch (this) {
+            case Left(L l) -> requireNonNull( fnLeft.apply( l ) );
+            case Right(R r) -> requireNonNull( fnRight.apply( r ) );
 
+        };
+    }
 
 
     /**
@@ -184,8 +214,19 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @return an {@link Either} based on the algorithm described above.
      * @throws NullPointerException if the called mapping function returns {@code null}.
      */
-    @NotNull Either<L, R> filter(@NotNull Predicate<? super R> predicate,
-                                 @NotNull Function<? super R, ? extends L> mapper);
+    @NotNull
+    default Either<L, R> filter(@NotNull Predicate<? super R> predicate,
+                                @NotNull Function<? super R, ? extends L> mapper) {
+        requireNonNull( predicate );
+        requireNonNull( mapper );
+
+        return switch (this) {
+            case Left(L l) -> this;
+            case Right(R r) -> predicate.test( r )
+                    ? this
+                    : Either.ofLeft( mapper.apply( r ) ); // implicit null check
+        };
+    }
 
 
     /**
@@ -198,7 +239,7 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * </p>
      *
      * @param fn {@link Function} that produces a {@link Left} value.
-     * @return A {@link Left} value (either the current {@link Left} if present, or the produced {@link Left} if not.
+     * @return A {@link Left} value; the current {@link Left} if present, or the produced {@link Left} if not.
      * @throws NullPointerException if the result of the mapping function is {@code null}.
      * @see #recover(Function)
      */
@@ -219,7 +260,7 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * </p>
      *
      * @param fn {@link Function} that produces a {@link Right} value.
-     * @return A {@link Right} value (either the current {@link Right} if present, or the produced {@link Right} if not.
+     * @return A {@link Right} value; the current {@link Right} if present, or the produced {@link Right} if not.
      * @throws NullPointerException if the result of the mapping function is {@code null}.
      * @see #forfeit(Function)
      */
@@ -233,9 +274,16 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * Return a {@link Stream}, containing either a single {@link Right} value, or an empty {@link Stream}
      * if this is a {@link Left value}.
      *
+     * @return Stream
      * @see #streamLeft()
      */
-    @NotNull Stream<R> stream();
+    @NotNull
+    default Stream<R> stream() {
+        return switch (this) {
+            case Left(L l) -> Stream.empty();
+            case Right(R r) -> Stream.of( r );
+        };
+    }
 
     /**
      * Return a {@link Stream}, containing either a single {@link Left} value, or an empty {@link Stream}
@@ -243,7 +291,13 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      *
      * @see #stream()
      */
-    @NotNull Stream<L> streamLeft();
+    @NotNull
+    default Stream<L> streamLeft() {
+        return switch (this) {
+            case Left(L l) -> Stream.of( l );
+            case Right(R r) -> Stream.empty();
+        };
+    }
 
     /**
      * Determines if this {@link Right} {@link Either} contains the given value.
@@ -257,7 +311,12 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #containsLeft
      * @see #matchesLeft
      */
-    boolean contains(@Nullable R rVal);
+    default boolean contains(@Nullable R rVal) {
+        return switch (this) {
+            case Left(L l) -> false;
+            case Right(R r) -> r.equals( rVal );
+        };
+    }
 
     /**
      * Determines if this {@link Left} {@link Either} contains the given value.
@@ -271,12 +330,17 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #matches
      * @see #contains
      */
-    boolean containsLeft(@Nullable L lVal);
+    default boolean containsLeft(@Nullable L lVal) {
+        return switch (this) {
+            case Left(L l) -> l.equals( lVal );
+            case Right(R r) -> false;
+        };
+    }
 
     /**
      * Determines if this {@link Right} {@link Either} matches the given {@link Predicate}.
      * <p>
-     * The {@link Predicate} is not invoked if this is a {@link Left} {@link Either}
+     * The {@link Predicate} is not tested if this is a {@link Left} {@link Either}
      * </p>
      *
      * @param rp the {@link Predicate} to test
@@ -285,12 +349,19 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #matchesLeft
      * @see #containsLeft
      */
-    boolean matches(@NotNull Predicate<R> rp);
+    default boolean matches(@NotNull Predicate<R> rp) {
+        requireNonNull( rp );
+
+        return switch (this) {
+            case Left(L l) -> false;
+            case Right(R r) -> rp.test( r );
+        };
+    }
 
     /**
      * Determines if this {@link Left} {@link Either} matches the given {@link Predicate}.
      * <p>
-     * The {@link Predicate} is not invoked if this is a {@link Right} {@link Either}
+     * The {@link Predicate} is not tested if this is a {@link Right} {@link Either}
      * </p>
      *
      * @param lp the {@link Predicate} to test
@@ -299,8 +370,14 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #contains
      * @see #matches
      */
-    boolean matchesLeft(@NotNull Predicate<L> lp);
+    default boolean matchesLeft(@NotNull Predicate<L> lp) {
+        requireNonNull( lp );
 
+        return switch (this) {
+            case Left(L l) -> lp.test( l );
+            case Right(R r) -> false;
+        };
+    }
 
     /**
      * If this is a {@link Right}, return a new {@link Right} value produced by the given mapping function.
@@ -343,7 +420,17 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #biFlatMap(Function, Function)
      * @see #flatMapLeft(Function)
      */
-    @NotNull <R2> Either<L, R2> flatMap(@NotNull Function<? super R, ? extends Either<? extends L, ? extends R2>> rightMapper);
+    @SuppressWarnings("unchecked")
+    @NotNull
+    default <R2> Either<L, R2> flatMap(@NotNull Function<? super R, ? extends
+            Either<? extends L, ? extends R2>> rightMapper) {
+        requireNonNull( rightMapper );
+
+        return switch (this) {
+            case Left(L l) -> (Left<L, R2>) this;    // coerce right
+            case Right(R r) -> (Either<L, R2>) requireNonNull( rightMapper.apply( r ) );
+        };
+    }
 
 
     /**
@@ -387,8 +474,17 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #biFlatMap(Function, Function)
      * @see #flatMap(Function)
      */
-    // aka join; if left present, apply mapping function otherwise return this (right)
-    @NotNull <L2> Either<L2, R> flatMapLeft(@NotNull Function<? super L, ? extends Either<? extends L2, ? extends R>> leftMapper);
+    @SuppressWarnings("unchecked")
+    @NotNull
+    default <L2> Either<L2, R> flatMapLeft(@NotNull Function<? super L, ? extends
+            Either<? extends L2, ? extends R>> leftMapper) {
+        requireNonNull( leftMapper );
+
+        return switch (this) {
+            case Left(L l) -> (Either<L2, R>) requireNonNull( leftMapper.apply( l ) );
+            case Right(R r) -> (Right<L2, R>) this;    // coerce left
+        };
+    }
 
 
     /**
@@ -427,7 +523,15 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #orElseLeft
      * @see #orElseGetLeft
      */
-    @NotNull R orElse(@NotNull R rightAlternate);
+    @NotNull
+    default R orElse(@NotNull R rightAlternate) {
+        requireNonNull( rightAlternate );
+
+        return switch (this) {
+            case Left(L l) -> rightAlternate;
+            case Right(R r) -> r;
+        };
+    }
 
     /**
      * If this {@link Either} is {@link Right}, return {@code leftAlternate}.
@@ -439,7 +543,14 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #orElse
      * @see #orElseGet
      */
-    @NotNull L orElseLeft(@NotNull L leftAlternate);
+    @NotNull
+    default L orElseLeft(@NotNull L leftAlternate) {
+        requireNonNull( leftAlternate );
+        return switch (this) {
+            case Left(L l) -> l;
+            case Right(R r) -> leftAlternate;
+        };
+    }
 
     /**
      * If this {@link Either} is {@link Left}, return the supplied {@link Right} {@link Either}.
@@ -452,7 +563,15 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #orElseLeft
      * @see #orElseGetLeft
      */
-    @NotNull R orElseGet(@NotNull Supplier<? extends R> rightSupplier);
+    @NotNull
+    default R orElseGet(@NotNull Supplier<? extends R> rightSupplier) {
+        requireNonNull( rightSupplier );
+
+        return switch (this) {
+            case Left(L l) -> rightSupplier.get();
+            case Right(R r) -> r;
+        };
+    }
 
     /**
      * If this {@link Either} is {@link Right}, return the supplied {@link Left}  {@link Either}.
@@ -465,7 +584,15 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #orElse
      * @see #orElseGet
      */
-    @NotNull L orElseGetLeft(@NotNull Supplier<? extends L> leftSupplier);
+    @NotNull
+    default L orElseGetLeft(@NotNull Supplier<? extends L> leftSupplier) {
+        requireNonNull( leftSupplier );
+
+        return switch (this) {
+            case Left(L l) -> l;
+            case Right(R r) -> leftSupplier.get();
+        };
+    }
 
 
     /**
@@ -477,14 +604,23 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @see #or(Either)
      * @see #or(Supplier)
      */
-    @NotNull <R2> Either<L, R2> and(@NotNull Either<L, R2> nextEither);
+    @NotNull
+    default <R2> Either<L, R2> and(@NotNull Either<L, R2> nextEither) {
+        requireNonNull( nextEither );
+
+        return switch (this) {
+            case Left(L l) -> ((Left<L, R>) this).coerce();
+            case Right(R r) -> nextEither;
+        };
+    }
 
     /**
-     * If {@code this} is {@link Left}, return it (without invoking the {@link Supplier}.
+     * If {@code this} is {@link Left}, return it (without invoking the {@link Supplier}).
      * Otherwise, return the next {@link Either} supplied.
      * The next Either can have a different parameterized Right type.
      *
      * @param nextEitherSupplier The supplier of an {@link Either} to return; only called if {@code this} is {@link Right}.
+     * @param <R2>               New {@link Right} value
      * @throws NullPointerException if the supplied {@link Either} is {@code null}.
      * @see #and(Either)
      * @see #or(Either)
@@ -493,7 +629,11 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
     @NotNull
     default <R2> Either<L, R2> and(@NotNull Supplier<Either<L, R2>> nextEitherSupplier) {
         requireNonNull( nextEitherSupplier );
-        return and( nextEitherSupplier.get() );
+
+        return switch (this) {
+            case Left(L l) -> ((Left<L, R>) this).coerce();
+            case Right(R r) -> requireNonNull( nextEitherSupplier.get() );
+        };
     }
 
 
@@ -503,11 +643,20 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * The next Either can have a different parameterized Left type.
      *
      * @param nextEither The {@link Either} to return.
+     * @param <L2>       New {@link Left} value
      * @see #or(Supplier)
      * @see #and(Either)
      * @see #and(Supplier)
      */
-    @NotNull <L2> Either<L2, R> or(@NotNull Either<L2, R> nextEither);
+    @NotNull
+    default <L2> Either<L2, R> or(@NotNull Either<L2, R> nextEither) {
+        requireNonNull( nextEither );
+
+        return switch (this) {
+            case Left(L l) -> nextEither;
+            case Right(R r) -> ((Right<L, R>) this).coerce();
+        };
+    }
 
 
     /**
@@ -516,6 +665,7 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * The next Either can have a different parameterized Left type.
      *
      * @param nextEitherSupplier The supplier of an {@link Either} to return; only called if {@code this} is {@link Left}.
+     * @param <L2>               New {@link Left} value
      * @throws NullPointerException if the supplier is called and returns {@code null}.
      * @see #or(Either)
      * @see #and(Either)
@@ -524,7 +674,11 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
     @NotNull
     default <L2> Either<L2, R> or(@NotNull Supplier<Either<L2, R>> nextEitherSupplier) {
         requireNonNull( nextEitherSupplier );
-        return or( nextEitherSupplier.get() );
+
+        return switch (this) {
+            case Left(L l) -> requireNonNull( nextEitherSupplier.get() );
+            case Right(R r) -> ((Right<L, R>) this).coerce();
+        };
     }
 
 
@@ -542,7 +696,15 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @throws X                    the supplied {@link Exception}
      * @throws NullPointerException if the called Supplier returns {@code null}.
      */
-    @NotNull <X extends Throwable> R getOrThrow(@NotNull Supplier<X> supplier) throws X;
+    @NotNull
+    default <X extends Throwable> R getOrThrow(@NotNull Supplier<X> supplier) throws X {
+        requireNonNull( supplier );
+
+        return switch (this) {
+            case Left(L l) -> throw supplier.get();
+            case Right(R r) -> r;
+        };
+    }
 
 
     /**
@@ -592,7 +754,15 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * @throws X                    the produced {@link Exception}
      * @throws NullPointerException if the called Function returns {@code null}.
      */
-    @NotNull <X extends Throwable> R getOrThrowWrapped(@NotNull Function<L, X> exFn) throws X;
+    @NotNull
+    default <X extends Throwable> R getOrThrowWrapped(@NotNull Function<L, X> exFn) throws X {
+        requireNonNull( exFn );
+
+        return switch (this) {
+            case Left(L l) -> throw exFn.apply( l );
+            case Right(R r) -> r;
+        };
+    }
 
 
     /**
@@ -603,24 +773,98 @@ public sealed interface Either<L, R> extends Box<L, R> permits Left, Right {
      * <p>
      * For example, the following are equivalent:
      * </p>
-     * <pre>
-     *         {@code myEither.flatMapLeft(MyFunction::doit) == myEither.swap().flatMap(MyFunction::doit);}
-     *     </pre>
+     * {@snippet :
+     *      myEither.flatMapLeft(MyFunction::doit) == myEither.swap().flatMap(MyFunction::doit);
+     *}
      *
      * @return A new {@link Either} with left and right values swapped.
      */
-    @Override
-    default @NotNull Either<R, L> swap() {
-        return biFlatMap( Either::ofRight, Either::ofLeft );
+    default
+    @NotNull Either<R, L> swap() {
+        // optimized; could use biFlatMap( Either::ofRight, Either::ofLeft );
+        return switch (this) {
+            case Left(L l) -> Either.ofRight( l );
+            case Right(R r) -> Either.ofLeft( r );
+        };
+    }
+
+
+    /**
+     * Implementation of a Left {@link Either}.
+     *
+     * @param value Left value. May not be {@code null}.
+     * @param <L> parameter type of Left values.
+     * @param <R> parameter type of Right values.
+     */
+    record Left<L, R>(@NotNull L value) implements Either<L, R> {
+
+
+        /**
+         * Create a Left value.
+         */
+        public Left {
+            requireNonNull( value, "Left: value cannot be null!" );
+        }
+
+
+        /**
+         * Get the value. Never null.
+         */
+        @NotNull
+        public L get() { return value; }
+
+        /**
+         * Coerce the empty Right parameter to the new type.
+         * <p>
+         *     Does not create a new object.
+         * </p>
+         *
+         * @return coerced Left
+         * @param <R2> new Right parameter
+         */    @SuppressWarnings("unchecked")
+        @NotNull
+        public <R2> Either<L, R2> coerce() {
+            return (Either<L, R2>) this;
+        }
     }
 
     /**
-     * Create a new {@code Result} from the given {@link Either}.
+     * Implementation of a Right {@link Either}.
      *
-     * @return a new {@code Result}, equivalent to this {@link Either}.
+     * @param value Right value. May not be {@code null}.
+     * @param <L>   parameter type of Left values.
+     * @param <R>   parameter type of Right values.
      */
-    default @NotNull Result<R, L> toResult() {
-        return fold( Result::ofErr, Result::ofOK );
-    }
+    record Right<L, R>(@NotNull R value) implements Either<L, R> {
 
+        /**
+         * Create a Right value.
+         */
+        public Right {
+            requireNonNull( value, "Right: value cannot be null!" );
+        }
+
+
+        /**
+         * Get the value. Never null.
+         */
+        @NotNull
+        public R get() { return value; }
+
+
+        /**
+         * Coerce the empty Left parameter to the new type.
+         * <p>
+         *     Does not create a new object.
+         * </p>
+         *
+         * @return coerced Right
+         * @param <L2> new Left parameter
+         */
+        @SuppressWarnings("unchecked")
+        @NotNull
+        public <L2> Either<L2, R> coerce() {
+            return (Either<L2, R>) this;
+        }
+    }
 }

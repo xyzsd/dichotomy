@@ -1,4 +1,4 @@
-package net.xyzsd.dichotomy.function;
+package net.xyzsd.dichotomy.trying.function;
 
 
 import org.jetbrains.annotations.NotNull;

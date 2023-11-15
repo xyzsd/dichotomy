@@ -9,4 +9,4 @@
  *     allow functional code to wrap and use exception-generating methods in a convenient manner.
  * </p>
  */
-package net.xyzsd.dichotomy.function;
+package net.xyzsd.dichotomy.trying.function;

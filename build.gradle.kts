@@ -16,19 +16,43 @@ repositories {
 }
 
 dependencies {
-    compileOnly("org.jetbrains:annotations:23.0.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
+    compileOnly("org.jetbrains:annotations:24.0.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
 }
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(20))
+        vendor.set(JvmVendorSpec.ORACLE)
+    }
+
     withJavadocJar()
     withSourcesJar()
 }
 
+
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
+
+
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("--enable-preview")
+}
+
+tasks.withType<Test>().configureEach {
+    jvmArgs("--enable-preview")
+    useJUnitPlatform()
+}
+
+tasks.withType<JavaExec>().configureEach {
+    jvmArgs("--enable-preview")
+}
+
+
+
 
 publishing {
     publications {
@@ -96,6 +120,9 @@ tasks.javadoc {
     if (JavaVersion.current().isJava9Compatible) {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
+    val javadocOptions = options as CoreJavadocOptions
+    javadocOptions.addBooleanOption("-enable-preview", true)
+    javadocOptions.addStringOption("source", "20")
 }
 
 // for reproducible builds
