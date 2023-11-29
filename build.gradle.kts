@@ -23,8 +23,8 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(20))
-        vendor.set(JvmVendorSpec.ORACLE)
+        languageVersion.set(JavaLanguageVersion.of(21))
+        vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 
     withJavadocJar()
@@ -37,22 +37,9 @@ tasks.getByName<Test>("test") {
 }
 
 
-
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("--enable-preview")
-}
-
 tasks.withType<Test>().configureEach {
-    jvmArgs("--enable-preview")
     useJUnitPlatform()
 }
-
-tasks.withType<JavaExec>().configureEach {
-    jvmArgs("--enable-preview")
-}
-
-
-
 
 publishing {
     publications {
@@ -121,8 +108,7 @@ tasks.javadoc {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
     val javadocOptions = options as CoreJavadocOptions
-    javadocOptions.addBooleanOption("-enable-preview", true)
-    javadocOptions.addStringOption("source", "20")
+    javadocOptions.addStringOption("source", "21")
 }
 
 // for reproducible builds
