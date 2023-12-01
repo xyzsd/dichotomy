@@ -187,7 +187,7 @@ class TryTest {
     void ofOK_NONE() {
         final Try<Empty, RuntimeException> result = Try.ofOK();
         assertEquals( Try.OK.class, result.getClass() );
-        assertEquals( new Empty(), ((Try.OK<Empty, RuntimeException>) result).get() );
+        assertEquals( Empty.getInstance(), ((Try.OK<Empty, RuntimeException>) result).get() );
     }
 
 
