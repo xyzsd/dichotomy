@@ -10,7 +10,11 @@ import org.jetbrains.annotations.NotNull;
 @FunctionalInterface
 public interface ExSupplier<T> {
 
-    /** Get a Result or throw an Exception */
+    /**
+     * Get a type T or throw an Exception
+     * @return T object of supplied type
+     * @throws Exception exception on failure
+     */
     @NotNull T get() throws Exception;
 
 }

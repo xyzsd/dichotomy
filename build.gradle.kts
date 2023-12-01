@@ -39,16 +39,14 @@ tasks.getByName<Test>("test") {
 
 
 tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("--enable-preview")
+    options.compilerArgs.add("-Xlint:preview")
 }
 
 tasks.withType<Test>().configureEach {
-    jvmArgs("--enable-preview")
     useJUnitPlatform()
 }
 
 tasks.withType<JavaExec>().configureEach {
-    jvmArgs("--enable-preview")
 }
 
 

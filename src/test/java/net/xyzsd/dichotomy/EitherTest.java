@@ -1,17 +1,15 @@
-package net.xyzsd.dichotomy.either;
+package net.xyzsd.dichotomy;
 
-import net.xyzsd.dichotomy.Either;
-import net.xyzsd.dichotomy.Result;
 import net.xyzsd.dichotomy.util.Conversion;
+import org.junit.jupiter.api.Test;
 
+import static net.xyzsd.dichotomy.TestUtils.neverFunction;
+import static net.xyzsd.dichotomy.TestUtils.neverSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class EitherTest {
 
@@ -21,54 +19,31 @@ public class EitherTest {
     static final Either<String, Integer> RIGHT = Either.ofRight( RVAL );
 
 
-    public static class SingleUseConsumer<T> implements Consumer<T> {
-        private final AtomicInteger useCount = new AtomicInteger();
-
-        @Override
-        public final void accept(T t) {
-            useCount.incrementAndGet();
-        }
-
-        public final boolean wasActivatedOnce() {
-            return (useCount.get() == 1);
-        }
-    }
-
-
-    // 'never' types: check if implementation calls a supplier / function when it doesn't need to
-    // Using rawtypes is easier. if the cast fails... we have an error anyway
-    @SuppressWarnings("rawtypes")
-    public static final Supplier NEVERSUPPLIER = () -> {throw new IllegalStateException( "NEVERSUPPLIER::get invoked!" );};
-
-    @SuppressWarnings("rawtypes")
-    public static final Function NEVERFUNCTION = (x) -> {throw new IllegalStateException( "NEVERFUNCTION::apply invoked!" );};
-
-
-    @org.junit.jupiter.api.Test
+    @Test
     void ofLeft() {
         assertEquals( Either.Left.class, LEFT.getClass() );
         assertEquals( LVAL, ((Either.Left<String, Integer>) LEFT).get() );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void ofRight() {
         assertEquals( Either.Right.class, RIGHT.getClass() );
         assertEquals( RVAL, ((Either.Right<String, Integer>) RIGHT).get() );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void fromResult() {
-        assertEquals( RIGHT, Conversion.toEither( Result.ofOK(RVAL)) );
-        assertEquals( LEFT, Conversion.toEither( Result.ofErr(LVAL)) );
+        assertEquals( RIGHT, Conversion.toEither( Result.ofOK( RVAL ) ) );
+        assertEquals( LEFT, Conversion.toEither( Result.ofErr( LVAL ) ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void left() {
         assertEquals( Optional.of( LVAL ), LEFT.left() );
         assertTrue( LEFT.right().isEmpty() );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void right() {
         assertEquals( Optional.of( RVAL ), RIGHT.right() );
         assertTrue( RIGHT.left().isEmpty() );
@@ -76,21 +51,29 @@ public class EitherTest {
 
 
     // match(Consumer,Consumer)
-    @org.junit.jupiter.api.Test
+    @Test
     void biMatch() {
-        SingleUseConsumer<String> leftConsumer = new SingleUseConsumer<>();
-        SingleUseConsumer<Integer> rightConsumer = new SingleUseConsumer<>();
+        {
+            TestUtils.SingleUseConsumer<String> leftConsumer = new TestUtils.SingleUseConsumer<>();
+            TestUtils.SingleUseConsumer<Integer> rightConsumer = new TestUtils.SingleUseConsumer<>();
+            //
+            LEFT.biMatch( leftConsumer, rightConsumer );
+            assertTrue( leftConsumer.usedJustOnce() );
+            assertTrue( rightConsumer.neverUsed() );
+        }
 
-        LEFT.biMatch( leftConsumer, rightConsumer );
-        assertTrue( leftConsumer.wasActivatedOnce() );
-        assertFalse( rightConsumer.wasActivatedOnce() );
 
-        RIGHT.biMatch( leftConsumer, rightConsumer );
-        assertTrue( leftConsumer.wasActivatedOnce() );
-        assertTrue( rightConsumer.wasActivatedOnce() );
+        {
+            TestUtils.SingleUseConsumer<String> leftConsumer = new TestUtils.SingleUseConsumer<>();
+            TestUtils.SingleUseConsumer<Integer> rightConsumer = new TestUtils.SingleUseConsumer<>();
+            //
+            RIGHT.biMatch( leftConsumer, rightConsumer );
+            assertTrue( leftConsumer.neverUsed() );
+            assertTrue( rightConsumer.usedJustOnce() );
+        }
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void biMap() {
         Function<String, String> fnSS = s -> "STRING";
         Function<Integer, String> fnIS = i -> "INT";
@@ -111,11 +94,11 @@ public class EitherTest {
         } );
 
         // and must not execute if not needed
-        assertDoesNotThrow( () -> RIGHT.biMap( NEVERFUNCTION, fnIS ) );
-        assertDoesNotThrow( () -> LEFT.biMap( fnSS, NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> RIGHT.biMap( neverFunction(), fnIS ) );
+        assertDoesNotThrow( () -> LEFT.biMap( fnSS, neverFunction() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void biFlatMap() {
         final Function<String, Either<Long, Long>> fnStoE = (x) -> Either.ofLeft( 1111L );
         final Function<Integer, Either<Long, Long>> fnIntToE = (x) -> Either.ofRight( 2222L );
@@ -131,11 +114,11 @@ public class EitherTest {
             RIGHT.biFlatMap( fnStoE, x -> null );
         } );
 
-        assertDoesNotThrow( () -> RIGHT.biFlatMap( NEVERFUNCTION, fnIntToE ) );
-        assertDoesNotThrow( () -> LEFT.biFlatMap( fnStoE, NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> RIGHT.biFlatMap( neverFunction(), fnIntToE ) );
+        assertDoesNotThrow( () -> LEFT.biFlatMap( fnStoE, neverFunction() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void fold() {
         Function<String, Long> fnSL = s -> 1111L;
         Function<Integer, Long> fnIL = i -> -9999L;
@@ -155,102 +138,102 @@ public class EitherTest {
             RIGHT.fold( fnSL, x -> null );
         } );
 
-        assertDoesNotThrow( () -> LEFT.fold( fnSL, NEVERFUNCTION ) );
-        assertDoesNotThrow( () -> RIGHT.fold( NEVERFUNCTION, fnIL ) );
+        assertDoesNotThrow( () -> LEFT.fold( fnSL, neverFunction() ) );
+        assertDoesNotThrow( () -> RIGHT.fold( neverFunction(), fnIL ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void filter() {
         final Function<Integer, String> fn = x -> "FUNCTION";
 
         // left returns left, always
         assertEquals( LEFT, LEFT.filter( x -> true, fn ) );
         assertEquals( LEFT, LEFT.filter( x -> false, fn ) );
-        assertDoesNotThrow( () -> LEFT.filter( x -> true, NEVERFUNCTION ) );
-        assertDoesNotThrow( () -> LEFT.filter( x -> false, NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> LEFT.filter( x -> true, neverFunction() ) );
+        assertDoesNotThrow( () -> LEFT.filter( x -> false, neverFunction() ) );
 
         // right returns right, if predicate matches
         assertEquals( RIGHT, RIGHT.filter( x -> true, fn ) );
-        assertDoesNotThrow( () -> RIGHT.filter( x -> true, NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> RIGHT.filter( x -> true, neverFunction() ) );
 
         // right returns mapper result, if predicate fails
         final Either<String, Integer> filter = RIGHT.filter( x -> false, fn );
         assertTrue( filter.containsLeft( "FUNCTION" ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void forfeit() {
         final Function<Integer, String> fn = x -> "FUNCTION";
         assertEquals( LVAL, LEFT.forfeit( fn ) );
         assertEquals( "FUNCTION", RIGHT.forfeit( fn ) );
-        assertDoesNotThrow( () -> LEFT.forfeit( NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> LEFT.forfeit( neverFunction() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void recover() {
         final Function<String, Integer> fn = x -> 999;
         assertEquals( 999, LEFT.recover( fn ) );
         assertEquals( RVAL, RIGHT.recover( fn ) );
-        assertDoesNotThrow( () -> RIGHT.recover( NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> RIGHT.recover( neverFunction() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void stream() {
         assertEquals( 1, RIGHT.stream().count() );
         assertTrue( RIGHT.stream().allMatch( (i) -> (i == RVAL) ) );
         assertEquals( 0, RIGHT.streamLeft().count() );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void streamLeft() {
         assertEquals( 1, LEFT.streamLeft().count() );
         assertTrue( LEFT.streamLeft().allMatch( (s) -> s.equals( LVAL ) ) );
         assertEquals( 0, LEFT.stream().count() );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void contains() {
         assertTrue( RIGHT.contains( 42 ) );
         assertFalse( RIGHT.contains( 1000 ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void containsLeft() {
         assertTrue( LEFT.containsLeft( LVAL ) );
         assertFalse( LEFT.containsLeft( "" ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void matches() {
-        assertTrue( RIGHT.matches( x -> true ) );
-        assertTrue( RIGHT.matches( x -> (x == RVAL) ) );
-        assertFalse( RIGHT.matches( x -> false ) );
+        assertTrue( RIGHT.ifPredicate( x -> true ) );
+        assertTrue( RIGHT.ifPredicate( x -> (x == RVAL) ) );
+        assertFalse( RIGHT.ifPredicate( x -> false ) );
 
         // left Eithers should NEVER match any predicate for the right either (matches() is right biased)
-        assertFalse( LEFT.matches( x -> true ) );
-        assertFalse( LEFT.matches( x -> (x == RVAL) ) );
-        assertFalse( LEFT.matches( x -> false ) );
+        assertFalse( LEFT.ifPredicate( x -> true ) );
+        assertFalse( LEFT.ifPredicate( x -> (x == RVAL) ) );
+        assertFalse( LEFT.ifPredicate( x -> false ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void matchesLeft() {
         // right Eithers should NEVER match any predicate for the left Either
-        assertFalse( RIGHT.matchesLeft( x -> true ) );
-        assertFalse( RIGHT.matchesLeft( LVAL::equals ) );
-        assertFalse( RIGHT.matchesLeft( x -> false ) );
+        assertFalse( RIGHT.ifPredicateLeft( x -> true ) );
+        assertFalse( RIGHT.ifPredicateLeft( LVAL::equals ) );
+        assertFalse( RIGHT.ifPredicateLeft( x -> false ) );
 
-        assertTrue( LEFT.matchesLeft( x -> true ) );
-        assertTrue( LEFT.matchesLeft( LVAL::equals ) );
-        assertFalse( LEFT.matchesLeft( x -> false ) );
+        assertTrue( LEFT.ifPredicateLeft( x -> true ) );
+        assertTrue( LEFT.ifPredicateLeft( LVAL::equals ) );
+        assertFalse( LEFT.ifPredicateLeft( x -> false ) );
     }
 
     // right-biased map
-    @org.junit.jupiter.api.Test
+    @Test
     void testMap() {
         Function<Integer, String> fnIS = i -> "INT";
 
         assertEquals( Either.ofLeft( LVAL ), LEFT.map( fnIS ) );
-        assertDoesNotThrow( () -> LEFT.map( NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> LEFT.map( neverFunction() ) );
 
         assertEquals( Either.ofRight( "INT" ), RIGHT.map( fnIS ) );
         assertThrows( NullPointerException.class, () -> RIGHT.map( x -> null ) );
@@ -258,29 +241,29 @@ public class EitherTest {
     }
 
     // right-biased flatmap
-    @org.junit.jupiter.api.Test
+    @Test
     void testFlatMap() {
         final Function<Integer, Either<String, Long>> fnIntToE = (x) -> Either.ofRight( 2222L );
 
         assertEquals( Either.ofLeft( LVAL ), LEFT.flatMap( fnIntToE ) );
-        assertDoesNotThrow( () -> LEFT.flatMap( NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> LEFT.flatMap( neverFunction() ) );
 
         assertEquals( Either.ofRight( 2222L ), RIGHT.flatMap( fnIntToE ) );
         assertThrows( NullPointerException.class, () -> RIGHT.flatMap( x -> null ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void mapLeft() {
         Function<String, String> fnSS = s -> "STRING";
 
         assertEquals( Either.ofRight( RVAL ), RIGHT.mapLeft( fnSS ) );
-        assertDoesNotThrow( () -> RIGHT.mapLeft( NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> RIGHT.mapLeft( neverFunction() ) );
 
         assertEquals( Either.ofLeft( "STRING" ), LEFT.mapLeft( fnSS ) );
         assertThrows( NullPointerException.class, () -> LEFT.mapLeft( x -> null ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void flatMapLeft() {
         final Function<String, Either<Long, Integer>> fnStoE = (x) -> Either.ofLeft( 1111L );
 
@@ -288,65 +271,66 @@ public class EitherTest {
         assertThrows( NullPointerException.class, () -> LEFT.flatMapLeft( x -> null ) );
 
         assertEquals( Either.ofRight( RVAL ), RIGHT.flatMapLeft( fnStoE ) );
-        assertDoesNotThrow( () -> RIGHT.flatMapLeft( NEVERFUNCTION ) );
+        assertDoesNotThrow( () -> RIGHT.flatMapLeft( neverFunction() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void matchLeft() {
-        final SingleUseConsumer<String> consumer = new SingleUseConsumer<>();
 
-        LEFT.matchLeft( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
+        final TestUtils.SingleUseConsumer<String> leftConsumer = new TestUtils.SingleUseConsumer<>();
+        LEFT.matchLeft( leftConsumer );
+        assertTrue( leftConsumer.usedJustOnce() );
 
-        RIGHT.matchLeft( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
+        final TestUtils.SingleUseConsumer<String> rightConsumer = new TestUtils.SingleUseConsumer<>();
+        RIGHT.matchLeft( rightConsumer );
+        assertTrue( rightConsumer.neverUsed() );
     }
 
     // match(Consumer) with right bias
-    @org.junit.jupiter.api.Test
+    @Test
     void testMatch() {
-        final SingleUseConsumer<Integer> consumer = new SingleUseConsumer<>();
+        final TestUtils.SingleUseConsumer<Integer> rightConsumer = new TestUtils.SingleUseConsumer<>();
+        RIGHT.match( rightConsumer );
+        assertTrue( rightConsumer.usedJustOnce() );
 
-        RIGHT.match( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
-
-        LEFT.match( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
+        final TestUtils.SingleUseConsumer<Integer> leftConsumer = new TestUtils.SingleUseConsumer<>();
+        LEFT.match( leftConsumer );
+        assertTrue( leftConsumer.neverUsed() );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void orElse() {
         assertEquals( RVAL, RIGHT.orElse( 222 ) );
         assertEquals( 222, LEFT.orElse( 222 ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void orElseLeft() {
         assertEquals( "ALTERNATE", RIGHT.orElseLeft( "ALTERNATE" ) );
         assertEquals( LVAL, LEFT.orElseLeft( "ALTERNATE" ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void orElseGet() {
         // correctness
         assertEquals( RVAL, RIGHT.orElseGet( () -> 222 ) );
         assertEquals( 222, LEFT.orElseGet( () -> 222 ) );
 
         // efficiency
-        assertEquals( RVAL, RIGHT.orElseGet( NEVERSUPPLIER ) );
+        assertEquals( RVAL, RIGHT.orElseGet( neverSupplier() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void orElseGetLeft() {
         // correctness
         assertEquals( "ALTERNATE", RIGHT.orElseGetLeft( () -> "ALTERNATE" ) );
         assertEquals( LVAL, LEFT.orElseGetLeft( () -> "ALTERNATE" ) );
 
         // efficiency
-        assertEquals( LVAL, LEFT.orElseGetLeft( NEVERSUPPLIER ) );
+        assertEquals( LVAL, LEFT.orElseGetLeft( neverSupplier() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void and() {
         assertEquals( LEFT, LEFT.and( Either.ofRight( "RIGHT_STRING" ) ) );
 
@@ -356,9 +340,9 @@ public class EitherTest {
         );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void testAnd() {
-        assertEquals( LEFT, LEFT.and( NEVERSUPPLIER ) );
+        assertEquals( LEFT, LEFT.and( neverSupplier() ) );
 
         assertEquals( Either.ofRight( "RIGHT_STRING" ),
                 RIGHT.and( () -> Either.ofRight( "RIGHT_STRING" ) )
@@ -370,18 +354,18 @@ public class EitherTest {
         );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void or() {
-        assertEquals( Either.ofLeft( 555L),
-                LEFT.or(  Either.ofLeft( 555L ) )
+        assertEquals( Either.ofLeft( 555L ),
+                LEFT.or( Either.ofLeft( 555L ) )
         );
 
         assertEquals( RIGHT, RIGHT.or( LEFT ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void testOr() {
-        assertEquals( Either.ofLeft( 555L),
+        assertEquals( Either.ofLeft( 555L ),
                 LEFT.or( () -> Either.ofLeft( 555L ) )
         );
 
@@ -390,39 +374,39 @@ public class EitherTest {
                 () -> LEFT.or( () -> null )
         );
 
-        assertEquals( RIGHT, RIGHT.or( NEVERSUPPLIER ) );
+        assertEquals( RIGHT, RIGHT.or( neverSupplier() ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void getOrThrow() {
+        assertThrows(
+                ArithmeticException.class,
+                () -> LEFT.expect( ArithmeticException::new )
+        );
+
+        assertEquals( RVAL, RIGHT.expect( ArithmeticException::new ) );
+    }
+
+    @Test
+    void getOrThrowWrapped() {
         assertThrows(
                 ArithmeticException.class,
                 () -> LEFT.getOrThrow( ArithmeticException::new )
         );
 
-        assertEquals( RVAL, RIGHT.getOrThrow( ArithmeticException::new ) );
-    }
-
-    @org.junit.jupiter.api.Test
-    void getOrThrowWrapped() {
-        assertThrows(
-                ArithmeticException.class,
-                () -> LEFT.getOrThrowWrapped( ArithmeticException::new )
-        );
-
         try {
-            LEFT.getOrThrowWrapped( IOException::new );
-        } catch(IOException e) {
+            LEFT.getOrThrow( IOException::new );
+        } catch (IOException e) {
             // getOrThrowWrapped() calls the IOException(String) constructor,
             // since LEFT is a String type, rather than the no-arg IOException
             // constructor, as getOrThrow() via a Supplier would.
             assertEquals( LVAL, e.getMessage() );
         }
 
-        assertEquals( RVAL, RIGHT.getOrThrowWrapped( ArithmeticException::new ) );
+        assertEquals( RVAL, RIGHT.getOrThrow( ArithmeticException::new ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void swap() {
         Either<String, String> left = Either.ofLeft( "left" );
         Either<String, String> leftSwap = left.swap();
@@ -433,14 +417,14 @@ public class EitherTest {
         assertTrue( rightSwap.containsLeft( "right" ) );
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void toResult() {
-        assertEquals( Result.ofErr(LVAL), Conversion.toResult(LEFT) );
-        assertEquals( Result.ofOK(RVAL), Conversion.toResult(RIGHT) );
+        assertEquals( Result.ofErr( LVAL ), Conversion.toResult( LEFT ) );
+        assertEquals( Result.ofOK( RVAL ), Conversion.toResult( RIGHT ) );
     }
 
     // because we don't want illegal monads
-    @org.junit.jupiter.api.Test
+    @Test
     void monadicLaws() {
         // NOTE: the terms 'left identity' and 'right identity' below, are general terms for monad properties,
         //       and do not refer to right and left Eithers!
@@ -455,17 +439,17 @@ public class EitherTest {
         // given: LVAL (our value) [already defined]
         // given: LEFT (our Either which wraps LVAL) [already defined]
         // given: the following function:
-        final Function<String, Either<String,Integer>> concat = s -> Either.ofLeft(s+s);
+        final Function<String, Either<String, Integer>> concat = s -> Either.ofLeft( s + s );
         // then the following should be equivalent:
         assertEquals(
-                concat.apply(LVAL),
+                concat.apply( LVAL ),
                 LEFT.flatMapLeft( concat )
         );
 
         // and similarly, for right Eithers:
-        final Function<Integer, Either<String,Integer>> square = i -> Either.ofRight( i*i);
+        final Function<Integer, Either<String, Integer>> square = i -> Either.ofRight( i * i );
         assertEquals(
-                square.apply(RVAL) ,
+                square.apply( RVAL ),
                 RIGHT.flatMap( square )
         );
 
@@ -498,8 +482,8 @@ public class EitherTest {
         // flatmap nesting order should not matter
         // given: functions square & concat from above (for right and left monads, respectively)
         // given: the following functions:
-        final Function<String,Either<String,Integer>> delim = s -> Either.ofLeft(s+","+s);
-        final Function<Integer,Either<String,Integer>> hundredMore = i -> Either.ofRight(i+100);
+        final Function<String, Either<String, Integer>> delim = s -> Either.ofLeft( s + "," + s );
+        final Function<Integer, Either<String, Integer>> hundredMore = i -> Either.ofRight( i + 100 );
         // then:
         assertEquals(
                 LEFT.flatMapLeft( delim ).flatMapLeft( concat ),
@@ -513,7 +497,7 @@ public class EitherTest {
 
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void swapEquivalences() {
         final Either<String, Integer> original = Either.ofLeft( "left" );
         final Either<Integer, String> swapped = original.swap();
@@ -521,8 +505,8 @@ public class EitherTest {
         // could do this for multiple methods....
         // as an example, the following should be equivalent:
         assertEquals(
-                original.forfeit( NEVERFUNCTION ),
-                swapped.recover(NEVERFUNCTION)
+                original.forfeit( neverFunction() ),
+                swapped.recover( neverFunction() )
         );
     }
 
