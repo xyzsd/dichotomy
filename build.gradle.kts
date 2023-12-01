@@ -21,7 +21,7 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
 }
 
-java {
+java { 
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
         vendor.set(JvmVendorSpec.ADOPTIUM)
@@ -37,9 +37,20 @@ tasks.getByName<Test>("test") {
 }
 
 
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:preview")
+}
+
+
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
+
+tasks.withType<JavaExec>().configureEach {
+}
+
+
 
 publishing {
     publications {

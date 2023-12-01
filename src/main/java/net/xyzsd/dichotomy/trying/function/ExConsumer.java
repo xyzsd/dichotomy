@@ -19,7 +19,7 @@ public interface ExConsumer<T> {
     /**
      * Performs this operation on the given argument.
      * @param t input
-     * @throws Exception
+     * @throws Exception exception
      */
     void accept(@Nullable T t) throws Exception;
 

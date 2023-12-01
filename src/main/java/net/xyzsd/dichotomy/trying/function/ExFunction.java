@@ -40,6 +40,15 @@ public interface ExFunction<T, R>  {
     // with the wrapped exception as the cause (or as suppressed)
 
 
+
+    /**
+     * Composes this ExFunction with a regular Function.
+     *
+     * @param before the Function to be composed with
+     * @param <V> the input type of the composed Function
+     * @return the composed ExFunction
+     * @throws NullPointerException if the before Function is null
+     */
     // compose with a regular Function
     @NotNull
     default <V> ExFunction<V, R> compose(@NotNull Function<? super V, ? extends T> before) {
@@ -69,6 +78,16 @@ public interface ExFunction<T, R>  {
 
 
 
+
+    /**
+     * Composes an ExFunction with another ExFunction, applying the before function first
+     * and then applying this function to the result.
+     *
+     * @param <V> the type of the input to the before function
+     * @param before the ExFunction to apply before this function
+     * @return a composed ExFunction that applies the before function followed by this function
+     * @throws NullPointerException if before is null
+     */
     @NotNull
     default <V> ExFunction<V, R> composeEx(@NotNull ExFunction<? super V, ? extends T> before) {
         requireNonNull(before);

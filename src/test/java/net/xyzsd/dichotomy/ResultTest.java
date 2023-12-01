@@ -1,19 +1,18 @@
-package net.xyzsd.dichotomy.result;
+package net.xyzsd.dichotomy;
 
-import net.xyzsd.dichotomy.None;
-import net.xyzsd.dichotomy.Result;
 import static net.xyzsd.dichotomy.Result.OK;
 import static net.xyzsd.dichotomy.Result.Err;
 
 import org.junit.jupiter.api.Test;
-import net.xyzsd.dichotomy.either.EitherTest.SingleUseConsumer;
+import net.xyzsd.dichotomy.TestUtils.SingleUseConsumer;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
+import static net.xyzsd.dichotomy.TestUtils.neverFunction;
+import static net.xyzsd.dichotomy.TestUtils.neverSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -44,19 +43,6 @@ class ResultTest {
     static final Function<RuntimeException, Result<String, RuntimeException>> fnERR_FLAT = (e) -> Result.ofErr( fnERR_VAL );
 
 
-    // TODO: needs to be in a common util class; copied from EitherTest
-    // 'never' types: check if implementation calls a supplier / function when it doesn't need to
-    // Using rawtypes is easier. if the cast fails... we have an error anyway
-    @SuppressWarnings("rawtypes")
-    public static final Supplier NEVERSUPPLIER = () -> {
-        throw new IllegalStateException( "NEVERSUPPLIER::get invoked!" );
-    };
-
-    @SuppressWarnings("rawtypes")
-    public static final Function NEVERFUNCTION = (x) -> {
-        throw new IllegalStateException( "NEVERFUNCTION::apply invoked!" );
-    };
-
 
     @Test
     void ofOK() {
@@ -67,19 +53,19 @@ class ResultTest {
     }
 
     @Test
-    void testOfOK() {
-        final Result<None, Object> result = Result.ofOK();
+    void ofOK_NONE() {
+        final Result<Empty, Object> result = Result.ofOK();
         assertEquals( OK.class, result.getClass() );
-        assertEquals( new None(), ((OK<None, Object>) result).get() );
+        assertEquals( new Empty(), ((OK<Empty, Object>) result).get() );
     }
 
     @Test
     void ofNullable() {
         // this test assumes that other method tests pass
-        Result<String, None> resultFromNull = Result.ofNullable( null );
+        Result<String, Empty> resultFromNull = Result.ofNullable( null );
         assertTrue( resultFromNull instanceof Err );
 
-        Result<String, None> resultNotNull = Result.ofNullable( OK_VALUE );
+        Result<String, Empty> resultNotNull = Result.ofNullable( OK_VALUE );
         assertTrue( resultNotNull instanceof OK);
     }
 
@@ -87,10 +73,10 @@ class ResultTest {
     @Test
     void from() {
         // this test assumes that other method tests pass
-        Result<String, None> resultFromEmpty = Result.from( Optional.<String>empty() );
+        Result<String, Empty> resultFromEmpty = Result.from( Optional.<String>empty() );
         assertTrue( resultFromEmpty instanceof Err );
 
-        Result<String, None> result = Result.from( Optional.of( OK_VALUE ) );
+        Result<String, Empty> result = Result.from( Optional.of( OK_VALUE ) );
         assertTrue( result instanceof OK );
     }
 
@@ -103,6 +89,26 @@ class ResultTest {
         assertThrows( NullPointerException.class, () -> {Result.ofErr( null );} );
     }
 
+
+    @Test
+    void ok() {
+        Result<String, RuntimeException> resultERR = Result.ofErr( ERR_VALUE );
+        assertTrue( resultERR.ok().isEmpty() );
+
+        Result<String, RuntimeException> resultOK = Result.ofOK( OK_VALUE );
+        assertTrue( resultOK.ok().isPresent() );
+        assertEquals( resultOK.ok().get(),  OK_VALUE );
+    }
+
+    @Test
+    void err() {
+        Result<String, RuntimeException> resultERR = Result.ofErr( ERR_VALUE );
+        assertTrue( resultERR.err().isPresent() );
+        assertEquals( resultERR.err().get(),  ERR_VALUE );
+
+        Result<String, RuntimeException> resultOK = Result.ofOK( OK_VALUE );
+        assertTrue( resultOK.err().isEmpty() );
+    }
 
     @Test
     void swap() {
@@ -123,16 +129,23 @@ class ResultTest {
 
     @Test
     void biMatch() {
-        SingleUseConsumer<String> okConsumer = new SingleUseConsumer<>();
-        SingleUseConsumer<RuntimeException> errConsumer = new SingleUseConsumer<>();
+        {
+            SingleUseConsumer<String> okConsumer = new SingleUseConsumer<>();
+            SingleUseConsumer<RuntimeException> errConsumer = new SingleUseConsumer<>();
+            //
+            OK.biMatch( okConsumer, errConsumer );
+            assertTrue( okConsumer.usedJustOnce() );
+            assertTrue( errConsumer.neverUsed() );
+        }
 
-        OK.biMatch( okConsumer, errConsumer );
-        assertTrue( okConsumer.wasActivatedOnce() );
-        assertFalse( errConsumer.wasActivatedOnce() );
-
-        ERR.biMatch( okConsumer, errConsumer );
-        assertTrue( okConsumer.wasActivatedOnce() );
-        assertTrue( errConsumer.wasActivatedOnce() );
+        {
+            SingleUseConsumer<String> okConsumer = new SingleUseConsumer<>();
+            SingleUseConsumer<RuntimeException> errConsumer = new SingleUseConsumer<>();
+            //
+            ERR.biMatch( okConsumer, errConsumer );
+            assertTrue( okConsumer.neverUsed() );
+            assertTrue( errConsumer.usedJustOnce() );
+        }
     }
 
     @Test
@@ -153,8 +166,8 @@ class ResultTest {
         } );
 
         // unused side must not apply function
-        assertDoesNotThrow( () -> OK.biMap( fnOK, NEVERFUNCTION ) );
-        assertDoesNotThrow( () -> ERR.biMap( NEVERFUNCTION, fnERR2STR ) );
+        assertDoesNotThrow( () -> OK.biMap( fnOK, neverFunction() ) );
+        assertDoesNotThrow( () -> ERR.biMap( neverFunction(), fnERR2STR ) );
     }
 
     @Test
@@ -177,22 +190,22 @@ class ResultTest {
             ERR.biFlatMap( fnOK_FLAT, x -> null );
         } );
 
-        assertDoesNotThrow( () -> OK.biFlatMap( fnOK_FLAT, NEVERFUNCTION ) );
-        assertDoesNotThrow( () -> ERR.biFlatMap( NEVERFUNCTION, fnERR_FLAT ) );
+        assertDoesNotThrow( () -> OK.biFlatMap( fnOK_FLAT, neverFunction() ) );
+        assertDoesNotThrow( () -> ERR.biFlatMap( neverFunction(), fnERR_FLAT ) );
     }
 
     @Test
     void fold() {
-        assertEquals( fnOK_VAL, OK.fold( fnOK, NEVERFUNCTION ) );
-        assertEquals( fnERR_VAL, ERR.fold( NEVERFUNCTION, fnERR2ERR ) );
+        assertEquals( fnOK_VAL, OK.fold( fnOK, neverFunction() ) );
+        assertEquals( fnERR_VAL, ERR.fold( neverFunction(), fnERR2ERR ) );
 
         // null-returning function test
         assertThrows( NullPointerException.class, () -> {
-            OK.fold( x -> null, NEVERFUNCTION );
+            OK.fold( x -> null, neverFunction() );
         } );
 
         assertThrows( NullPointerException.class, () -> {
-            ERR.fold( NEVERFUNCTION, x -> null );
+            ERR.fold( neverFunction(), x -> null );
         } );
     }
 
@@ -206,11 +219,11 @@ class ResultTest {
     @Test
     void filter() {
         // Err->Err
-        assertEquals( ERR, ERR.filter( x -> true, NEVERFUNCTION ) );
-        assertEquals( ERR, ERR.filter( x -> false, NEVERFUNCTION ) );
+        assertEquals( ERR, ERR.filter( x -> true, neverFunction() ) );
+        assertEquals( ERR, ERR.filter( x -> false, neverFunction() ) );
 
         // OK->OK if predicate matches
-        assertEquals( OK, OK.filter( x -> true, NEVERFUNCTION ) );
+        assertEquals( OK, OK.filter( x -> true, neverFunction() ) );
 
         // OK->Err if predicate doesn't match
         assertEquals( Result.ofErr( fnSTR2ERR_VAL ), OK.filter( x -> false, fnSTR2ERR ) );
@@ -218,18 +231,20 @@ class ResultTest {
 
     @Test
     void match() {
-        SingleUseConsumer<String> consumer = new SingleUseConsumer<>();
-        OK.match( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
-        ERR.match( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
+        SingleUseConsumer<String> okConsumer = new SingleUseConsumer<>();
+        OK.match( okConsumer );
+        assertTrue( okConsumer.usedJustOnce() );
+
+        SingleUseConsumer<String> errConsumer = new SingleUseConsumer<>();
+        ERR.match( errConsumer );
+        assertTrue( errConsumer.neverUsed() );
     }
 
     @Test
     void map() {
         assertEquals( Result.ofOK( fnOK_VAL ), OK.map( fnOK ) );
         assertEquals( ERR, ERR.map( fnOK ) );
-        assertDoesNotThrow( () -> {ERR.map( NEVERFUNCTION );} );
+        assertDoesNotThrow( () -> {ERR.map( neverFunction() );} );
         assertThrows( NullPointerException.class, () -> OK.map( x -> null ) );
     }
 
@@ -237,17 +252,17 @@ class ResultTest {
     void flatMap() {
         assertEquals( Result.ofOK( fnOK_VAL ), OK.flatMap( fnOK_FLAT ) );
         assertEquals( ERR, ERR.flatMap( fnOK_FLAT ) );
-        assertDoesNotThrow( () -> {ERR.flatMap( NEVERFUNCTION );} );
+        assertDoesNotThrow( () -> {ERR.flatMap( neverFunction() );} );
         assertThrows( NullPointerException.class, () -> OK.flatMap( x -> null ) );
     }
 
     @Test
     void matches() {
-        assertTrue( OK.matches( x -> true ) );
-        assertFalse( OK.matches( x -> false ) );
+        assertTrue( OK.ifPredicate( x -> true ) );
+        assertFalse( OK.ifPredicate( x -> false ) );
 
-        assertFalse( ERR.matches( x -> true ) );
-        assertFalse( ERR.matches( x -> false ) );
+        assertFalse( ERR.ifPredicate( x -> true ) );
+        assertFalse( ERR.ifPredicate( x -> false ) );
     }
 
     @Test
@@ -264,13 +279,13 @@ class ResultTest {
 
     @Test
     void orElseGet() {
-        assertEquals( OK_VALUE, OK.orElseGet( NEVERSUPPLIER ) );
-        assertEquals( "orElse-alternate", ERR.orElseGet( () -> "orElse-alternate" ) );
+        assertEquals( OK_VALUE, OK.orElse( neverSupplier() ) );
+        assertEquals( "orElse-alternate", ERR.orElse( () -> "orElse-alternate" ) );
     }
 
     @Test
     void recover() {
-        assertEquals( OK_VALUE, OK.recover( NEVERFUNCTION ) );
+        assertEquals( OK_VALUE, OK.recover( neverFunction() ) );
         assertEquals( fnERR_VAL.getMessage(), ERR.recover( fnERR2STR ) );
     }
 
@@ -283,18 +298,20 @@ class ResultTest {
 
     @Test
     void matchErr() {
-        SingleUseConsumer<RuntimeException> consumer = new SingleUseConsumer<>();
-        ERR.matchErr( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
-        OK.matchErr( consumer );
-        assertTrue( consumer.wasActivatedOnce() );
+        SingleUseConsumer<RuntimeException> errConsumer = new SingleUseConsumer<>();
+        ERR.matchErr( errConsumer );
+        assertTrue( errConsumer.usedJustOnce() );
+
+        SingleUseConsumer<RuntimeException> okConsumer = new SingleUseConsumer<>();
+        OK.matchErr( okConsumer );
+        assertTrue( okConsumer.neverUsed() );
     }
 
     @Test
     void mapErr() {
         assertEquals( Result.ofErr( fnERR_VAL ), ERR.mapErr( fnERR2ERR ) );
         assertEquals( OK, OK.mapErr( fnERR2ERR ) );
-        assertDoesNotThrow( () -> {OK.mapErr( NEVERFUNCTION );} );
+        assertDoesNotThrow( () -> {OK.mapErr( neverFunction() );} );
         assertThrows( NullPointerException.class, () -> ERR.mapErr( x -> null ) );
     }
 
@@ -302,17 +319,17 @@ class ResultTest {
     void flatMapErr() {
         assertEquals( Result.ofErr( fnERR_VAL ), ERR.flatMapErr( fnERR_FLAT ) );
         assertEquals( OK, OK.flatMapErr( fnERR_FLAT ) );
-        assertDoesNotThrow( () -> {OK.flatMapErr( NEVERFUNCTION );} );
+        assertDoesNotThrow( () -> {OK.flatMapErr( neverFunction() );} );
         assertThrows( NullPointerException.class, () -> ERR.flatMapErr( x -> null ) );
     }
 
     @Test
     void matchesErr() {
-        assertTrue( ERR.matchesErr( x -> true ) );
-        assertFalse( ERR.matchesErr( x -> false ) );
+        assertTrue( ERR.ifPredicateErr( x -> true ) );
+        assertFalse( ERR.ifPredicateErr( x -> false ) );
 
-        assertFalse( OK.matchesErr( x -> true ) );
-        assertFalse( OK.matchesErr( x -> false ) );
+        assertFalse( OK.ifPredicateErr( x -> true ) );
+        assertFalse( OK.ifPredicateErr( x -> false ) );
     }
 
     @Test
@@ -329,13 +346,13 @@ class ResultTest {
 
     @Test
     void orElseGetErr() {
-        assertEquals( ERR_VALUE, ERR.orElseGetErr( NEVERSUPPLIER ) );
-        assertEquals( fnERR_VAL, OK.orElseGetErr( () -> fnERR_VAL ) );
+        assertEquals( ERR_VALUE, ERR.orElseErr( neverSupplier() ) );
+        assertEquals( fnERR_VAL, OK.orElseErr( () -> fnERR_VAL ) );
     }
 
     @Test
     void forfeit() {
-        assertEquals( ERR_VALUE, ERR.forfeit( NEVERFUNCTION ) );
+        assertEquals( ERR_VALUE, ERR.forfeit( neverFunction() ) );
         assertEquals( fnSTR2ERR_VAL, OK.forfeit( fnSTR2ERR ) );
     }
 
@@ -347,7 +364,7 @@ class ResultTest {
 
     @Test
     void testAnd() {
-        assertEquals( ERR, ERR.and( NEVERSUPPLIER ) );
+        assertEquals( ERR, ERR.and( neverSupplier() ) );
 
         assertEquals(
                 Result.ofOK( "nextResult" ),
@@ -371,7 +388,7 @@ class ResultTest {
 
     @Test
     void testOr() {
-        assertEquals( OK, OK.or( NEVERSUPPLIER ) );
+        assertEquals( OK, OK.or( neverSupplier() ) );
 
         assertEquals(
                 Result.ofErr( "nextResult" ),
@@ -382,6 +399,7 @@ class ResultTest {
                 NullPointerException.class,
                 () -> { ERR.or( () -> null ); }
         );
+
     }
 
     @Test
@@ -418,15 +436,16 @@ class ResultTest {
 
     @Test
     void orThrowWrapped() {
-        assertDoesNotThrow( () -> OK.orThrowWrapped( NEVERFUNCTION ) );
-        assertEquals( OK_VALUE, OK.orThrowWrapped(NEVERFUNCTION) );
+        final String s = assertDoesNotThrow( () -> OK.getOrThrowMapped( neverFunction() ) );
+        assertEquals( OK_VALUE, s );
+
         assertThrows(
                 IOException.class,
-                () -> ERR.orThrowWrapped( IOException::new )
+                () -> ERR.getOrThrowMapped( IOException::new )
         );
         assertThrows(
                 RuntimeException.class,
-                () -> ERR.orThrow( RuntimeException::new )
+                () -> ERR.getOrThrow(  RuntimeException::new )
         );
 
         // but also see this
@@ -434,11 +453,11 @@ class ResultTest {
         final Result<?,String> result = Result.ofErr( MESSAGE );
         assertThrows(
                 IOException.class,
-                () -> result.orThrowWrapped( IOException::new )
+                () -> result.getOrThrowMapped( IOException::new )
         );
 
         try {
-            result.orThrowWrapped( IOException::new );
+            result.getOrThrowMapped( IOException::new );
         } catch(IOException e) {
             assertEquals( MESSAGE, e.getMessage() );
         }
@@ -446,16 +465,17 @@ class ResultTest {
 
     @Test
     void orThrow() {
-        assertDoesNotThrow( () -> OK.orThrow( NEVERSUPPLIER ) );
-        assertEquals( OK_VALUE, OK.orThrow(NEVERSUPPLIER) );
+        final String s = assertDoesNotThrow( () -> OK.getOrThrow( neverSupplier() ) );
+
+        assertEquals( OK_VALUE, s );
 
         assertThrows(
                 IOException.class,
-                () -> ERR.orThrow( IOException::new )
+                () -> ERR.getOrThrow( IOException::new )
         );
         assertThrows(
                 RuntimeException.class,
-                () -> ERR.orThrow( RuntimeException::new )
+                () -> ERR.getOrThrow( RuntimeException::new )
         );
     }
 
