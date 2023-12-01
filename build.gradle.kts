@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "net.xyzsd"
-version = "0.9"
+version = "1.0"
 
 repositories {
     mavenCentral()
