@@ -3,9 +3,12 @@
 # dichotomy
 Either and Result monadic types for Java
 
-## TODO:
-    * finish docs (particularly package docs, usage examples)
-    * nice intro (with synopsis and short examples)
+## UPDATE:
+    * major restructuring in progress (Either, Result, 'Try' (specialized type of Result), and Maybe (like Optional))
+    * ultimately will target JDK20, no preview features
+    * improved docs & usage notes pending (in progress)
+    * improved tests (also in progress)
+    * still needs: a nice intro (with synopsis and illustrative examples)
 
 
 Download
@@ -30,7 +33,7 @@ implementation("net.xyzsd:dichotomy:0.9")
 
 License
 -------
-Copyright 2022, xyzsd
+Copyright 2022-2023, xyzsd
 
 Licensed under either of:
 
