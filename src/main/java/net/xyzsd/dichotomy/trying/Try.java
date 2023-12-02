@@ -54,7 +54,7 @@ public sealed interface Try<V, E extends Exception> {
      */
     @NotNull
     static <E extends Exception> Try<Empty, E> ofOK() {
-        return new OK<>( new Empty() );
+        return new OK<>( Empty.getInstance() );
     }
 
     /**

@@ -7,8 +7,18 @@ package net.xyzsd.dichotomy;
  * as it cannot be instantiated, and extensive null-checking is in place.
  * </p>
  * <p>
- * Instead, the {@link Empty} type can be used. All {@link Empty} types are considered equivalent.
+ * Instead, the {@link Empty} type can be used.
  * </p>
  */
-public record Empty() {}
+public final class Empty {
+
+    private static Empty INSTANCE = new Empty();
+
+    private Empty() {
+    }
+
+    public static Empty getInstance() {
+        return INSTANCE;
+    }
+}
 // 'Empty' instead of None to differ from Maybe.None. 'Nil' could be a consideration. or maybe all caps to denote singleton ('NONE')

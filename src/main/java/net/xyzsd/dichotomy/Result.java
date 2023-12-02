@@ -97,7 +97,7 @@ public sealed interface Result<V, E> {
      */
     @NotNull
     static <E> Result<Empty, E> ofOK() {
-        return new OK<>( new Empty() );
+        return new OK<>( Empty.getInstance() );
     }
 
     /**
@@ -123,7 +123,7 @@ public sealed interface Result<V, E> {
      */
     @NotNull
     static <V> Result<V, Empty> ofNullable(@Nullable V value) {
-        return (value == null) ? ofErr( new Empty() ) : ofOK( value );
+        return (value == null) ? ofErr( Empty.getInstance() ) : ofOK( value );
     }
 
     /**
@@ -152,7 +152,7 @@ public sealed interface Result<V, E> {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @NotNull
     static <V> Result<V, Empty> from(@NotNull Optional<V> opt) {
-        return opt.<Result<V, Empty>>map( Result::ofOK ).orElseGet( () -> Result.ofErr( new Empty() ) );
+        return opt.<Result<V, Empty>>map( Result::ofOK ).orElseGet( () -> Result.ofErr( Empty.getInstance() ) );
     }
 
     /**

@@ -56,7 +56,7 @@ class ResultTest {
     void ofOK_NONE() {
         final Result<Empty, Object> result = Result.ofOK();
         assertEquals( OK.class, result.getClass() );
-        assertEquals( new Empty(), ((OK<Empty, Object>) result).get() );
+        assertEquals( Empty.getInstance(), ((OK<Empty, Object>) result).get() );
     }
 
     @Test
