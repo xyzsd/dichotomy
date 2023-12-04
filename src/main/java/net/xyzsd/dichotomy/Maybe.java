@@ -58,6 +58,7 @@ public sealed interface Maybe<T> {
         return (value == null) ? Maybe.ofNone() : Maybe.of( value );
     }
 
+
     /**
      * Perform an action depending on whether the {@link Maybe} is a {@link Some} or a {@link None}.
      * <p>
@@ -161,11 +162,19 @@ public sealed interface Maybe<T> {
     boolean contains(@Nullable final T value);
 
     /**
-     * True if this is a {@link Some}.
+     * True if this is a {@link Some} (contains <i>some</i>thing)
      *
      * @return {@code true} if this is a {@link Some} type.
      */
     boolean hasSome();
+
+
+    /**
+     * True if this is a {@link None}. (contains nothing).
+     *
+     * @return {@code true} if this is a {@link None} type.
+     */
+    boolean isNone();
 
     /**
      * If this is a {@link Some}, return it. Otherwise, use the provided alternate value.
@@ -247,6 +256,7 @@ public sealed interface Maybe<T> {
             requireNonNull( value );
         }
 
+
         @Override
         public @NotNull Maybe<T> biMatch(@NotNull Consumer<? super T> someConsumer, @NotNull Runnable noneRunner) {
             requireNonNull( someConsumer );
@@ -316,6 +326,11 @@ public sealed interface Maybe<T> {
         }
 
         @Override
+        public boolean isNone() {
+            return false;
+        }
+
+        @Override
         public @NotNull T orElse(@NotNull T alternate) {
             requireNonNull( value );
             return value;
@@ -378,6 +393,8 @@ public sealed interface Maybe<T> {
         private static <U> None<U> empty() {
             return (None<U>) _NONE_INSTANCE;
         }
+
+
 
 
         @Override
@@ -444,6 +461,11 @@ public sealed interface Maybe<T> {
         @Override
         public boolean hasSome() {
             return false;
+        }
+
+        @Override
+        public boolean isNone() {
+            return true;
         }
 
         @Override

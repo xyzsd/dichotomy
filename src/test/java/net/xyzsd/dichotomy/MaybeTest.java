@@ -184,6 +184,12 @@ class MaybeTest {
     }
 
     @Test
+    void isNone() {
+        assertFalse( MAYBE_YES.isNone() );
+        assertTrue( MAYBE_NOT.isNone() );
+    }
+
+    @Test
     void orElse() {
         // assertThrows( NullPointerException.class, () -> MAYBE_YES.orElse( (String)null ) );
         assertThrows( NullPointerException.class, () -> MAYBE_NOT.orElse( (String) null ) );

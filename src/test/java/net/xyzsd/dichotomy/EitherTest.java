@@ -37,6 +37,19 @@ public class EitherTest {
         assertEquals( LEFT, Conversion.toEither( Result.ofErr( LVAL ) ) );
     }
 
+
+    @Test
+    void isLeft() {
+        assertTrue( LEFT.isLeft() );
+        assertFalse( RIGHT.isLeft() );
+    }
+
+    @Test
+    void isRight() {
+        assertFalse( LEFT.isRight() );
+        assertTrue( RIGHT.isRight() );
+    }
+
     @Test
     void left() {
         assertEquals( Optional.of( LVAL ), LEFT.left() );

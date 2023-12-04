@@ -68,6 +68,17 @@ public sealed interface Either<L, R> {
 
 
     /**
+     * Returns {@code true} is this is a {@link Left} {@link Either}.
+     */
+    boolean isLeft();
+
+    /**
+     * Returns {@code true} is this is a {@link Right} {@link Either}.
+     */
+    boolean isRight();
+
+
+    /**
      * If the {@link Either} is {@link Left}, return the value as an {@link Optional}.
      * Otherwise, return an empty {@link Optional}.
      */
@@ -611,6 +622,22 @@ public sealed interface Either<L, R> {
          * {@inheritDoc}
          */
         @Override
+        public boolean isLeft() {
+            return true;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean isRight() {
+            return false;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public @NotNull Optional<L> left() {
             return Optional.of( value );
         }
@@ -941,6 +968,23 @@ public sealed interface Either<L, R> {
          */
         @NotNull
         public R get() {return value;}
+
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean isLeft() {
+            return false;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean isRight() {
+            return true;
+        }
 
 
         /**

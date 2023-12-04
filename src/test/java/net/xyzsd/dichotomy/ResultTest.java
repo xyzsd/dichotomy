@@ -89,6 +89,18 @@ class ResultTest {
         assertThrows( NullPointerException.class, () -> {Result.ofErr( null );} );
     }
 
+    @Test
+    void isOK() {
+        assertTrue( OK.isOK() );
+        assertFalse( ERR.isOK() );
+    }
+
+    @Test
+    void isErr() {
+        assertFalse( OK.isErr() );
+        assertTrue( ERR.isErr() );
+    }
+
 
     @Test
     void ok() {

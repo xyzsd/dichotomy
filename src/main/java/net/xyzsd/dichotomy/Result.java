@@ -168,6 +168,21 @@ public sealed interface Result<V, E> {
         return new Err<>( error );
     }
 
+
+
+
+    /**
+     * If this is an {@link OK}, return {@code true}.
+     */
+    boolean isOK();
+
+    /**
+     * If this is an {@link Err}, return {@code true}.
+     */
+    boolean isErr();
+
+
+
     /**
      * Get the {@link OK} value V as an {@link Optional}.
      *
@@ -437,7 +452,7 @@ public sealed interface Result<V, E> {
      * This is equivalent to:
      * {@snippet :
      *      // given:
-     *      Result<String,Integer> result = Result<>.of(5);
+     *      Result<String, Integer> result = Result<>.of(5);
      *      Function<Integer,Double> mapper = (i) -> 10.0d * i;
      *
      *      // newResult : 50.0d
@@ -715,6 +730,15 @@ public sealed interface Result<V, E> {
             return value;
         }
 
+        @Override
+        public boolean isOK() {
+            return true;
+        }
+
+        @Override
+        public boolean isErr() {
+            return false;
+        }
 
         @Override
         public @NotNull Optional<V> ok() {
@@ -957,6 +981,16 @@ public sealed interface Result<V, E> {
             return error;
         }
 
+
+        @Override
+        public boolean isOK() {
+            return false;
+        }
+
+        @Override
+        public boolean isErr() {
+            return true;
+        }
 
         @Override
         public @NotNull Optional<V> ok() {
