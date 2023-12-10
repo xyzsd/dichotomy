@@ -15,7 +15,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A right-biased Either monad implementation.
  * <blockquote>
- * {@code An Either holds Left or Right values,}<br>
+ * {@code Eithers hold Left or Right values,}<br>
  * {@code but never both or neither,}<br>
  * {@code otherwise it'd be a tuple,}<br>
  * {@code rather than an Either.}
@@ -134,7 +134,8 @@ public sealed interface Either<L, R> {
      * @see #map(Function)
      * @see #mapLeft(Function)
      */
-    @NotNull <L2, R2> Either<L2, R2> biFlatMap(@NotNull Function<? super L, ? extends Either<? extends L2, ? extends R2>> fnLeft, @NotNull Function<? super R, ? extends Either<? extends L2, ? extends R2>> fnRight);
+    @NotNull <L2, R2> Either<L2, R2> biFlatMap(@NotNull Function<? super L, ? extends Either<? extends L2, ? extends R2>> fnLeft,
+                                               @NotNull Function<? super R, ? extends Either<? extends L2, ? extends R2>> fnRight);
 
 
     /**
@@ -155,7 +156,8 @@ public sealed interface Either<L, R> {
      * @see #recover(Function)
      * @see #forfeit(Function)
      */
-    @NotNull <T> T fold(@NotNull Function<? super L, ? extends T> fnLeft, @NotNull Function<? super R, ? extends T> fnRight);
+    @NotNull <T> T fold(@NotNull Function<? super L, ? extends T> fnLeft,
+                        @NotNull Function<? super R, ? extends T> fnRight);
 
 
     /**
@@ -175,7 +177,8 @@ public sealed interface Either<L, R> {
      * @return an {@link Either} based on the algorithm described above.
      * @throws NullPointerException if the called mapping function returns {@code null}.
      */
-    @NotNull Either<L, R> filter(@NotNull Predicate<? super R> predicate, @NotNull Function<? super R, ? extends L> mapper);
+    @NotNull Either<L, R> filter(@NotNull Predicate<? super R> predicate,
+                                 @NotNull Function<? super R, ? extends L> mapper);
 
 
     /**
@@ -542,8 +545,7 @@ public sealed interface Either<L, R> {
      * <p>
      * For example:
      * </p>
-     * <pre>
-     *     {@code
+     * {@snippet :
      *              Either<String,Integer> int anExampleMethod(int input) {
      *                  if(input > 100) {
      *                     return Either.ofRight(input * 10);
@@ -553,18 +555,24 @@ public sealed interface Either<L, R> {
      *              }
      *
      *              Either<String,Integer> myEitherGood = anExampleMethod(1000);
-     *              int goodValue = myEitherGood.getOrThrowWrapped(ArithmeticException::new);
+     *              int goodValue = myEitherGood.getOrThrow(ArithmeticException::new);
      *              // goodValue = 10000; no exception thrown
      *
-     *              // regarding getOrThrowWrapped(ArithmeticException::new)
+     *              // regarding getOrThrow(ArithmeticException::new)
      *              //     this works because there is an ArithmeticException(String) constructor;
      *              //     otherwise a compile-time error would occur (no appropriate constructor to match)
      *
      *              Either<String,Integer> myEitherBad = anExampleMethod(-37234);
-     *              int badValue = myEitherGood.getOrThrowWrapped(ArithmeticException::new);
+     *              int badValue = myEitherGood.getOrThrow(ArithmeticException::new);
      *              // throws a new ArithmeticException("input too small")
      *     }
-     * </pre>
+     *<p>
+     *     To create an exception that does <b>not</b> wrap:
+     * {@snippet :
+     *      getOrThrow((x) -> new IOException("My Exception"));
+     * }
+     *</p>
+     *
      *
      * @param exFn {@link Exception} producing {@link Function}
      * @param <X>  {@link Exception}

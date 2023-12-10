@@ -2,6 +2,8 @@ package net.xyzsd.dichotomy.trying.function;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 /**
  * Represents a Supplier that can throw an exception.
  *
@@ -16,5 +18,7 @@ public interface ExSupplier<T> {
      * @throws Exception exception on failure
      */
     @NotNull T get() throws Exception;
+
+
 
 }

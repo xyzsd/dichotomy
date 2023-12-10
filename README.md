@@ -4,10 +4,10 @@
 Either and Result monadic types for Java
 
 ## UPDATE:
-    * major restructuring in progress (Either, Result, 'Try' (specialized type of Result), and Maybe (like Optional))
-    * ultimately will target JDK20, no preview features
-    * improved docs & usage notes pending (in progress)
-    * improved tests (also in progress)
+    * Substantially restructed for the pending 1.0 version
+    * 'Try' type is currently being refactored and changed. 
+    * Improved documentation and examples
+    * Improved test
     * still needs: a nice intro (with synopsis and illustrative examples)
 
 

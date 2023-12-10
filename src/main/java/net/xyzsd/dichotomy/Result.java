@@ -681,26 +681,9 @@ public sealed interface Result<V, E> {
      * @param <X>  Exception created by {@code exFn}
      * @return Value V
      * @throws X Exception
-     * @see #getOrThrow(Supplier)
      * @see #expect()
      */
-    @NotNull <X extends Exception> V getOrThrowMapped(@NotNull Function<E, X> exFn) throws X;
-
-    /**
-     * Throw the given supplied {@link Exception}
-     * <p>
-     * This method takes a {@link Supplier}. In many cases, the exception message or fields can be customized
-     * more easily with {@link #getOrThrowMapped(Function)}.
-     * </p>
-     *
-     * @param supplier Exception supplier
-     * @param <X>      Exception created by the supplier
-     * @return Value V
-     * @throws X Exception
-     * @see #getOrThrowMapped(Function)
-     * @see #expect()
-     */
-    @NotNull <X extends Exception> V getOrThrow(@NotNull Supplier<X> supplier) throws X;
+    @NotNull <X extends Exception> V getOrThrow(@NotNull Function<E, X> exFn) throws X;
 
     /**
      * Success Result.
@@ -933,15 +916,10 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public <X extends Exception> @NotNull V getOrThrowMapped(@NotNull Function<E, X> exFn) {
+        public <X extends Exception> @NotNull V getOrThrow(@NotNull Function<E, X> exFn) {
             return value;
         }
 
-
-        @Override
-        public <X extends Exception> @NotNull V getOrThrow(@NotNull Supplier<X> supplier) {
-            return value;
-        }
 
         // For types where the error type is unchanged and exists, but the generic type of the value differs
         // just cast and return. Types are erased so there is no need to create a new object.
@@ -1189,15 +1167,9 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public <X extends Exception> @NotNull V getOrThrowMapped(@NotNull Function<E, X> exFn) throws X {
+        public <X extends Exception> @NotNull V getOrThrow(@NotNull Function<E, X> exFn) throws X {
             requireNonNull( exFn );
             throw requireNonNull( exFn.apply( error ) );
-        }
-
-        @Override
-        public <X extends Exception> @NotNull V getOrThrow(@NotNull Supplier<X> supplier) throws X {
-            requireNonNull( supplier );
-            throw requireNonNull( supplier.get() );
         }
 
         // For types where the error type is unchanged and exists, but the generic type of the value differs

@@ -1,1168 +1,732 @@
 package net.xyzsd.dichotomy.trying;
 
-
 import net.xyzsd.dichotomy.Empty;
-import net.xyzsd.dichotomy.Result;
+import net.xyzsd.dichotomy.trying.function.ExBiFunction;
 import net.xyzsd.dichotomy.trying.function.ExFunction;
 import net.xyzsd.dichotomy.trying.function.ExSupplier;
-import net.xyzsd.dichotomy.trying.function.SpecExSupplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * A {@link Result}-like monad specialized to handle both successful and failed operations, but where
- * failed operations are always {@link Exception}s.
- *
- *
- * @param <V> The type of the value contained in the Try.
- * @param <E> The type of the exception that can occur in the Try.
- */
-public sealed interface Try<V, E extends Exception> {
+// basic rules of thumb for methods:
+//  if we return a Try, we can capture exceptions.
+//  if we return a value (e.g., <V> or throwable), we cannot!
+// general rules of nulls
+//  nulls to arguments -> throws an exception (contract violated)
+//  nulls after function application -> CAUGHT if Try returned, but thrown if value returned
 
+public sealed interface Try<V> permits Try.Failure, Try.Success {
 
-    /**
-     * Create an {@link OK} (Success) {@link Try} for the given non-null value.
-     *
-     * @param value value for success
-     * @param <V>   Value type
-     * @param <E>   Error Exception type
-     * @return {@link OK}  {@link Try} containing the given value.
+    /*
+
+        todo:
+            * TESTS
+            * docs
+
      */
-    @NotNull
-    static <V, E extends Exception> Try<V, E> ofOK(@NotNull V value) {
-        return new OK<>( value );
+
+
+    static <T> Try<T> ofSuccess(@NotNull T value) {
+        return Success.of( value );
     }
 
-    /**
-     * Create an empty {@link OK} (Success) {@link Try}.
-     * <p>
-     * All empty values use the {@link Empty} type.
-     * </p>
-     *
-     * @param <E> Error value
-     * @return {@link OK} {@link Try} containing the given value.
-     */
-    @NotNull
-    static <E extends Exception> Try<Empty, E> ofOK() {
-        return new OK<>( Empty.getInstance() );
+    static <T, X extends Throwable> Try<T> ofFailure(@NotNull X failure) {
+        return Failure.of( failure );
     }
 
-    /**
-     * Create an {@link Err} (Failure) {@link Try} for the given non-null value.
-     *
-     * @param error Error
-     * @param <V>   Value type
-     * @param <E>   Error Exception type
-     * @return {@link Err} containing the given error Exception.
-     */
-    @NotNull
-    static <V, E extends Exception> Try<V, E> ofErr(@NotNull E error) {
-        return new Err<>( error );
-    }
 
-    /**
-     * Creates a Try object by executing a supplied function and handling exceptions.
-     *
-     * @param supplier the supplier function that provides the result
-     * @param exClass the class of exception to be handled
-     * @param <V> the type of result
-     * @param <X> the type of exception
-     * @return a Try object representing the result or exception
-     * @throws NullPointerException if supplier is null
-     * @throws RuntimeException if an exception not assignable to exClass occurs
-     */
-    @NotNull
-    static <V, X extends Exception> Try<V, X> of(@NotNull Supplier<V> supplier, @NotNull Class<X> exClass) {
-        requireNonNull( supplier );
-
+    // pass in a regular supplier via of(Supplier::get)
+    static <T> Try<T> of(ExSupplier<T> xSupplier) {
+        requireNonNull( xSupplier );
         try {
-            return new OK<>( supplier.get() );
+            return Success.of( xSupplier.get() );
         } catch (Throwable t) {
-            if (exClass.isInstance( t )) {
-                return new Err<>( exClass.cast( t ) );
-            }
-            throw t;
+            return Failure.of( t );
         }
     }
 
-    /**
-     * Creates a Try object based on the result of the given supplier.
-     *
-     * @param supplier the supplier that provides the value
-     * @param <V> the type of the value
-     * @return a Try object representing the result of the supplier
-     * @throws NullPointerException if the supplier is null
-     */
-    // ANY runtime exception. standard Suppliers Can't throw checked exceptions (no throws clause defined), so, not included
-    @NotNull
-    static <V> Try<V, RuntimeException> of(@NotNull Supplier<V> supplier) {
+    // also takes a regular function via passing in (in, fn::apply)
+    static <T, R> Try<R> of(final T in, ExFunction<T, R> xFn) {
+        requireNonNull( xFn );
+        try {
+            return Success.of( xFn.apply( in ) );
+        } catch (Throwable t) {
+            return Failure.of( t );
+        }
+    }
+
+    static <T, U, R> Try<R> of(final T tIn, final U uIn, ExBiFunction<T, U, R> xBiFn) {
+        requireNonNull( xBiFn );
+        try {
+            return Success.of( xBiFn.apply( tIn, uIn ) );
+        } catch (Throwable t) {
+            return Failure.of( t );
+        }
+    }
+
+
+    // Supplier/ExSupplier to checked supplier, only invoked when used (lazy)
+    static <T> ExSupplier<Try<T>> from(Supplier<T> supplier) {
         requireNonNull( supplier );
+        return () -> of( supplier::get );
+    }
 
-        try {
-            return new OK<>( supplier.get() );
-        } catch (RuntimeException ex) {
-            return new Err<>( ex );
-        }
+    // same for functions (lazy)
+    static <T, R> ExFunction<T, Try<R>> from(Function<T, R> xFn) {
+        requireNonNull( xFn );
+        return (t) -> of( t, xFn::apply );
+    }
+
+    static <T, U, R> BiFunction<T, U, Try<R>> from(ExBiFunction<T, U, R> xBiFn) {
+        requireNonNull( xBiFn );
+        return (t, u) -> of( t, u, xBiFn );
     }
 
 
-
-    /**
-     * Get a {@link Try} from an {@link ExSupplier}.
-     * <p>
-     * The {@link ExSupplier} may throw a checked or unchecked {@link Exception}.
-     * The result of the function, or {@link Exception} will be contained in the {@link Try}.
-     * </p>
-     *
-     * @param exSupplier Supplier to invoke
-     * @param <V>        type of result supplied
-     * @return A {@link Try} containing the supplied value or an {@link Exception}
-     * @see #from(ExSupplier)
-     * @see #of(Supplier)
-     * @see #from(Supplier)
-     */
-    @NotNull
-    static <V> Try<V, Exception> of(@NotNull ExSupplier<V> exSupplier) {
-        requireNonNull( exSupplier );
-
-        try {
-            return new Try.OK<>( exSupplier.get() );
-        } catch (Exception ex) {
-            return new Try.Err<>( ex );
-        }
-    }
-
-    /**
-     * Converts an {@link Supplier} which may throw {@link RuntimeException}s to a {@link Supplier} of {@link Try}s.
-     *
-     * @param supplier Supplier to invoke
-     * @param <V>      type of result supplied
-     * @return A {@link Try} containing the supplied value or a {@link RuntimeException}
-     * @see #of(Supplier)
-     * @see #of(ExSupplier)
-     * @see #from(ExSupplier)
-     */
-    @NotNull
-    static <V> Supplier<Try<V, RuntimeException>> from(@NotNull Supplier<V> supplier) {
+    // 1 resource
+    static <T, AC extends AutoCloseable> Try<T> withResources(ExSupplier<AC> supplier, ExFunction<AC, T> fn) {
         requireNonNull( supplier );
-        return () -> of( supplier );
-    }
+        requireNonNull( fn );
 
-    /**
-     * Converts an {@link ExSupplier} to a {@link Supplier} of {@link Try}s.
-     * <p>
-     * The {@link ExSupplier} may throw a checked or unchecked {@link Exception},
-     * which will be wrapped in an {@link Err} {@link Try}.
-     * </p>
-     *
-     * @param exSupplier Supplier to invoke
-     * @param <V>        type of result supplied
-     * @return A {@link Try} containing the supplied value or an {@link Exception}
-     */
-    @NotNull
-    static <V> Supplier<Try<V, Exception>> from(@NotNull ExSupplier<V> exSupplier) {
-        requireNonNull( exSupplier );
-        return () -> of( exSupplier );
-    }
-
-    /**
-     * Converts a {@link SpecExSupplier} to a {@link Supplier} of {@link Try}s.
-     * <p>
-     * The returned {@link Supplier} will only wrap {@link Exception}s of the given class
-     * parameter {@code <X>} (and subclasses); all other {@link RuntimeException}s will be thrown.
-     * </p>
-     *
-     * @param exSupplier {@link SpecExSupplier} to wrap
-     * @param <V>        value wrapped by the given {@link Try}.
-     * @param <X>        {@link RuntimeException} wrapped by the given {@link Try}.
-     * @return A {@link Supplier} of {@link Try}s containing the supplied value or the specified
-     * {@link RuntimeException}{@code <X>}
-     * @see #of(SpecExSupplier, Class)
-     * @see #from(ExSupplier)
-     * @see #from(Supplier)
-     */
-    @NotNull
-    static <V, X extends RuntimeException> Supplier<Try<V, X>> from(@NotNull SpecExSupplier<V, X> exSupplier, final Class<X> exClass) {
-        requireNonNull( exSupplier );
-        return () -> of( exSupplier, exClass );
-    }
-
-    /**
-     * Execute a {@link SpecExSupplier} to a supply a {@link Try}.
-     * <p>
-     * The returned {@link Try} will contain the supplied value or the {@link RuntimeException} of the given class
-     * parameter {@code <X>} (and subclasses); all other {@link RuntimeException}s will be thrown.
-     * </p>
-     *
-     * @param exSupplier {@link SpecExSupplier} to wrap
-     * @param <V>        supplied value wrapped by a {@link Try}.
-     * @param <X>        {@link RuntimeException} type wrapped by a {@link Try}.
-     * @return A {@link Try} containing the supplied value or the specified {@link RuntimeException}
-     * @see #from(SpecExSupplier, Class)
-     */
-    @NotNull
-    static <V, X extends RuntimeException> Try<V, X> of(@NotNull SpecExSupplier<V, X> exSupplier, final Class<X> exClass) {
-        requireNonNull( exSupplier );
-        requireNonNull( exClass );
-
-        try {
-            return new Try.OK<>( exSupplier.get() );
-        } catch (RuntimeException ex) {
-            if (exClass.isAssignableFrom( ex.getClass() )) {
-                return new Try.Err<>( exClass.cast( ex ) );
-            }
-            throw ex;
+        try (AC ac = supplier.get()) {
+            return Try.Success.of( fn.apply( ac ) );
+        } catch (Throwable t) {
+            return Try.Failure.of( t );
         }
     }
 
-    /**
-     * Apply the given {@link ExFunction}, returning a {@link Try} which wraps either the return value
-     * of the {@link ExFunction} or an {@link Exception}.
-     *
-     * @param in   value applied
-     * @param exFn function, which may throw an exception
-     * @param <T>  function input
-     * @param <R>  function output
-     * @return A {@link Try} wrapping either the output value or an {@link Exception}.
-     * @see #from(ExFunction)
-     */
-    @NotNull
-    static <T, R> Try<R, Exception> of(@Nullable T in, @NotNull final ExFunction<T, R> exFn) {
-        requireNonNull( exFn );
-        return fnToTry( in, exFn );
-    }
+    // 2 resources
+    static <T, AC1 extends AutoCloseable, AC2 extends AutoCloseable> Try<T> withResources(ExSupplier<AC1> supplier1,
+                                                                                          ExSupplier<AC2> supplier2,
+                                                                                          ExBiFunction<AC1, AC2, T> biFn) {
+        requireNonNull( supplier1 );
+        requireNonNull( supplier2 );
+        requireNonNull( biFn );
 
-    /**
-     * Given an {@link Exception}-producing function ({@link ExFunction}), returns a {@link Function} which
-     * returns a {@link Try} wrapping the function output or {@link Exception}. This is lazy; the function
-     * is not evaluated.
-     *
-     * @param exFn {@link ExFunction} which may generate an exception
-     * @param <T>  function input
-     * @param <R>  function output
-     * @return {@link Function} returning {@link Try}s which wrap the output or {@link Exception}
-     * @see #of(Object, ExFunction)
-     */
-    @NotNull
-    static <T, R> Function<T, Try<R, Exception>> from(@NotNull final ExFunction<T, R> exFn) {
-        requireNonNull( exFn );
-        return (in) -> fnToTry( in, exFn );
-    }
-
-    private static <T, R> Try<R, Exception> fnToTry(@Nullable T in, @NotNull final ExFunction<T, R> exFn) {
-        try {
-            return new Try.OK<>( exFn.apply( in ) );
-        } catch (Exception ex) {
-            return new Try.Err<>( ex );
+        try (AC1 ac1 = supplier1.get(); AC2 ac2 = supplier2.get()) {
+            return Try.Success.of( biFn.apply( ac1, ac2 ) );
+        } catch (Throwable t) {
+            return Try.Failure.of( t );
         }
     }
 
-    /**
-     * Get the {@link Result.OK} value V as an {@link Optional}.
-     *
-     * @return return the {@link Result.OK} value if present; otherwise, return an empty {@link Optional}.
-     */
-    @NotNull Optional<V> ok();
 
-    /**
-     * Get the {@link Result.Err} value E as an {@link Optional}.
-     *
-     * @return return {@link Result.Err} value if present; otherwise, return an empty {@link Optional}.
-     */
-    @NotNull Optional<E> err();
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
+        throw (E) e;
+    }
 
 
-    /////////////////////////////////////////////////
-    // Interface methods
-    /////////////////////////////////////////////////
+    boolean isFailure();
 
-    /**
-     * Executes the action for the {@link OK} or {@link Err} depending upon
-     * the value of this {@link Try}.
-     *
-     * @return {@code this}
-     * @throws NullPointerException if the called action returns {@code null}.
-     * @see #match(Consumer)
-     * @see #matchErr(Consumer)
-     */
-    @NotNull Try<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer);
+    boolean isSuccess();
 
-    /**
-     * Returns a new {@link Try}, the value of which is determined by the appropriate mapping function.
-     * <p>
-     * The returned {@link Try} (which may be {@link OK} or {@link Err}) can have different types.
-     * </p>
-     *
-     * @param okMapper  the mapping function for {@link OK} values.
-     * @param errMapper the mapping function for {@link Err} values.
-     * @return the {@link Try} produced from {@code okMapper} or {@code errMapper}
-     * @throws NullPointerException if the called function returns {@code null}.
-     * @see #map(Function)
-     * @see #mapErr(Function)
-     */
-    @NotNull <V2, E2 extends Exception> Try<V2, E2> biMap(@NotNull Function<? super V, ? extends V2> okMapper, @NotNull Function<? super E, ? extends E2> errMapper);
 
     /**
      * Returns a {@link Try}, produced from one of the appropriate mapping functions.
      * <p>
-     * The produced {@link Try} (which may be {@link Err} or {@link OK}) can have different types.
+     * The produced {@link Try} (which may be {@link Failure} or {@link Success}) can have different types.
      * </p>
      *
-     * @param fnOK  the mapping function for {@link OK} values.
-     * @param fnErr the mapping function for {@link Err} values.
-     * @return the {@link Try} produced from {@code fnOK} or {@code fnErr}
+     * @param fnSuccess the mapping function for {@link Success} values.
+     * @param fnFailure the mapping function for {@link Failure} values.
+     * @return the {@link Try} produced from {@code fnSuccess} or {@code fnFailure}
      * @throws NullPointerException if the called function returns {@code null}.
-     * @see #map(Function)
-     * @see #mapErr(Function) (Function)
+     * @see #map(ExFunction)
      */
-    @NotNull <V2, E2 extends Exception> Try<V2, E2> biFlatMap(@NotNull Function<? super V, ? extends Try<? extends V2, ? extends E2>> fnOK, @NotNull Function<? super E, ? extends Try<? extends V2, ? extends E2>> fnErr);
+    @NotNull <V2> Try<V2> biFlatMap(@NotNull ExFunction<? super V, ? extends Try<? extends V2>> fnSuccess,
+                                    @NotNull ExFunction<? super Throwable, ? extends Try<? extends V2>> fnFailure);
+
+
+
 
     /**
      * Returns a value, produced from one of the appropriate mapping functions.
      * <p>
      * The produced value can have any type (except {@link Void}) but mapping functions for
-     * both {@link Err} and {@link OK} types must produce the same value type.
-     * </p>
-     * <p>
-     * If no value is to be returned, use {@link #biMatch(Consumer, Consumer)} instead.
+     * both {@link Failure} and {@link Success} types must produce the same value type.
      * </p>
      *
-     * @param fnOK  the mapping function for {@link Err} values.
-     * @param fnErr the mapping function for {@link OK} values.
-     * @return the value produced from {@code fnOK} or {@code fnErr}
+     * @param fnSuccess the mapping function for {@link Failure} values.
+     * @param fnFailure the mapping function for {@link Success} values.
+     * @return the value produced from {@code fnSuccess} or {@code fnFailure}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #recover(Function)
      * @see #forfeit(Function)
      */
-    @NotNull <T> T fold(@NotNull Function<? super V, ? extends T> fnOK, @NotNull Function<? super E, ? extends T> fnErr);
+    @NotNull <T> T fold(@NotNull Function<? super V, ? extends T> fnSuccess,
+                        @NotNull Function<? super Throwable, ? extends T> fnFailure);
 
     /**
-     * Return a {@link Stream}, containing either a single {@link OK} value, or an empty {@link Stream}
-     * if this is an {@link Err} value.
-     *
-     * @see #streamErr()
+     * Return a {@link Stream}, containing either a single {@link Success} value, or an empty {@link Stream}
+     * if this is an {@link Failure} value.
      */
     @NotNull Stream<V> stream();
 
     /**
      * Filter a {@link Try}.
      * <p>
-     * If this {@link Try} is {@link Err}, return {@link Err} ({@code this}).
+     * If this {@link Try} is {@link Failure}, return {@link Failure} ({@code this}).
      * The {@code Predicate} is not tested, and the mapper {@code Function} is not executed.
      * </p>
      * <p>
-     * If this {@link Try} is {@link OK}, return {@link OK} ({@code this}) if the {@code Predicate} matches.
-     * If the {@code Predicate} fails to match, return an {@link Err} {@link Try} produced by applying the
+     * If this {@link Try} is {@link Success}, return {@link Success} ({@code this}) if the {@code Predicate} matches.
+     * If the {@code Predicate} fails to match, return an {@link Failure} {@link Try} produced by applying the
      * mapping function to the current {@link Try} ({@code this}).
      * </p>
      *
-     * @param predicate the predicate used to test {@link OK} values.
-     * @param mapper    the mapping function for {@link OK} values that do not match the predicate.
+     * @param predicate the predicate used to test {@link Success} values.
+     * @param fnUnmatched the mapping function for {@link Success} values that do not match the predicate.
      * @return a {@link Try} based on the algorithm described above.
      * @throws NullPointerException if the called mapping function returns {@code null}.
      */
-    @NotNull Try<V, E> filter(@NotNull Predicate<? super V> predicate, @NotNull Function<? super V, ? extends E> mapper);
+    @NotNull Try<V> filter(@NotNull Predicate<? super V> predicate, @NotNull ExFunction<? super V, ? extends Throwable> fnUnmatched);
 
     /**
-     * Executes the action iff this is an {@link OK} {@link Try}.
+     * Executes the action iff this is an {@link Success} {@link Try}.
      *
-     * @return {@code this}
+     * @return {@code this} if successful, otherwise returns a @link Failure} containing the exception.
      * @throws NullPointerException if the called action returns {@code null}.
-     * @see #matchErr(Consumer)
-     * @see #biMatch(Consumer, Consumer)
+     * @see #consume(Consumer)
+     * @see #consumeErr(Consumer)
      */
-    @NotNull Try<V, E> match(@NotNull Consumer<? super V> okConsumer);
+    @NotNull Try<V> exec(@NotNull Consumer<? super V> successConsumer);
 
 
     /**
-     * Executes the given consumer if this is a {@link OK}. This is a terminal operation.
+     * Executes the given consumer if this is a {@link Success}. This is a terminal operation.
+     * Unlike {@link #exec(Consumer)}, this method does <b>NOT</b> handle Exceptions.
      *
-     * @param okConsumer the consumer function to be executed
+     * @param successConsumer the consumer function to be executed
      */
-    default void consume(@NotNull Consumer<? super V> okConsumer) {
-        match(okConsumer);
-    }
+    void consume(@NotNull Consumer<? super V> successConsumer);
+
 
     /**
-     * If this is an {@link OK}, return a new {@link OK} value produced by the given mapping function.
-     * Otherwise, return the {@link Err} value.
+     * Executes the given consumer if this is a {@link Failure}; otherwise do nothing. This is a terminal operation.
+     * This method does <b>NOT</b> handle Exceptions.
+     *
+     * @param failureConsumer the consumer function to be executed
+     */
+    void consumeErr(@NotNull Consumer<? super Throwable> failureConsumer);
+
+
+    /**
+     * If this is an {@link Success}, return a new {@link Success} value produced by the given mapping function.
+     * Otherwise, return the {@link Failure} value.
      * <p>
-     * The type of the produced {@link OK} can be different. The mapping function is only invoked for
-     * {@link OK} values.
+     * The type of the produced {@link Success} can be different. The mapping function is only invoked for
+     * {@link Success} values.
      * </p>
      * <p>
      * This is equivalent to {@code map( Function.identity(), rightMapper )}.
      * </p>
      *
-     * @param okMapper the mapping function producing a new {@link OK} value.
-     * @return a new {@link OK} produced by the mapping function if this is {@link OK};
-     * otherwise, returns an {@link Err}.
+     * @param fnSuccess the mapping function producing a new {@link Success} value.
+     * @return a new {@link Success} produced by the mapping function if this is {@link Success};
+     * otherwise, returns an {@link Failure}.
      * @throws NullPointerException if the Try of the mapping function is {@code null}
-     * @see #mapErr(Function)
-     * @see #biMap(Function, Function)
      */
-    @NotNull <V2> Try<V2, E> map(@NotNull Function<? super V, ? extends V2> okMapper);
+    @NotNull <V2> Try<V2> map(@NotNull ExFunction<? super V, ? extends V2> fnSuccess);
+
+    @NotNull Try<V> mapErr(@NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure);
+
+    @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super V, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure);
+
+
+        /**
+         * If this is an {@link Success}, return the new {@link Try} supplied by the mapping function.
+         * Note that while the {@link Failure} type must remain the same, the {@link Success} type returned
+         * can be different.
+         * <p>
+         * This is also known as {@code join()} in other implementations.
+         * </p>
+         * <p>
+         * No mapping is performed if this is an {@link Failure}, and the mapping function is not invoked.
+         * </p>
+         *
+         * @param fnSuccess the mapping function that produces a new {@link Try}
+         * @return a new {@link Success} produced by the mapping function if this is {@link Success};
+         * otherwise, returns an {@link Failure}.
+         * @throws NullPointerException if the Try of the mapping function is {@code null}
+         * @see #biFlatMap(ExFunction, ExFunction)
+         */
+    @NotNull <V2> Try<V2> flatMap(@NotNull ExFunction<? super V, ? extends Try<? extends V2>> fnSuccess);
+
+
+    @NotNull Try<V> flatMapErr(@NotNull ExFunction<? super Throwable, ? extends Try<? extends V>> fnFailure);
+
 
     /**
-     * If this is an {@link OK}, return the new {@link Try} supplied by the mapping function.
-     * Note that while the {@link Err} type must remain the same, the {@link OK} type returned
-     * can be different.
+     * Determines if this {@link Success} {@link Try} matches the given {@link Predicate}.
      * <p>
-     * This is also known as {@code join()} in other implementations.
-     * </p>
-     * <p>
-     * No mapping is performed if this is an {@link Err}, and the mapping function is not invoked.
-     * </p>
-     *
-     * @param okMapper the mapping function that produces a new {@link Try}
-     * @return a new {@link OK} produced by the mapping function if this is {@link OK};
-     * otherwise, returns an {@link Err}.
-     * @throws NullPointerException if the Try of the mapping function is {@code null}
-     * @see #biFlatMap(Function, Function)
-     * @see #flatMapErr(Function)
-     */
-    @NotNull <V2> Try<V2, E> flatMap(@NotNull Function<? super V, ? extends Try<? extends V2, ? extends E>> okMapper);
-
-    /**
-     * Determines if this {@link OK} {@link Try} matches the given {@link Predicate}.
-     * <p>
-     * The {@link Predicate} is not invoked if this is an {@link Err} {@link Try}
+     * The {@link Predicate} is not invoked if this is an {@link Failure} {@link Try}
      * </p>
      *
      * @param okPredicate the {@link Predicate} to test
-     * @return {@code true} iff this is an {@link OK} {@link Try} and the {@link Predicate} matches.
+     * @return {@code true} iff this is an {@link Success} {@link Try} and the {@link Predicate} matches.
      * @see #contains(Object)
-     * @see #ifPredicateErr(Predicate)
-     * @see #containsErr(Exception)
      */
     boolean ifPredicate(@NotNull Predicate<V> okPredicate);
 
     /**
-     * Determines if this {@link OK} {@link Try} contains the given value.
+     * Determines if this {@link Success} {@link Try} contains the given value.
      * <p>
      * This will always return {@code false} for {@code null} values.
      * </p>
      *
      * @param okValue value to compare
-     * @return {@code true} iff this is an {@link OK} {@link Try} and the contained value equals {@code okValue}
+     * @return {@code true} iff this is an {@link Success} {@link Try} and the contained value equals {@code okValue}
      * @see #ifPredicate(Predicate)
-     * @see #containsErr(Exception)
-     * @see #ifPredicateErr(Predicate)
      */
     boolean contains(@Nullable V okValue);
 
     /**
-     * If this {@link Try} is {@link Err}, return {@code rightAlternate}.
-     * Otherwise, return {@code this} (an {@link OK} {@link Try}).
+     * If this {@link Try} is {@link Failure}, return {@code rightAlternate}.
+     * Otherwise, return {@code this} (an {@link Success} {@link Try}).
      *
-     * @param okAlternate alternate {@link OK} {@link Try}
-     * @return {@code this}, or {@code okAlternate} if {@code this} is {@link Err}
-     * @see #orElse(Supplier)
-     * @see #orElseErr(Exception)
-     * @see #orElseErr(Supplier)
+     * @param okAlternate alternate {@link Success} {@link Try}
+     * @return {@code this}, or {@code okAlternate} if {@code this} is {@link Failure}
+     * @see #orElseGet(Supplier)
      */
     @NotNull V orElse(@NotNull V okAlternate);
 
     /**
-     * If this {@link Try} is {@link Err}, return the supplied {@link OK} {@link Try}.
-     * Otherwise, return {@code this} (an {@link OK} {@link Try}) without
+     * If this {@link Try} is {@link Failure}, return the supplied {@link Success} {@link Try}.
+     * Otherwise, return {@code this} (an {@link Success} {@link Try}) without
      * invoking the {@link Supplier}.
      *
-     * @param okSupplier supplier of {@link OK} {@link Try}s
-     * @return {@code this}, or the supplied {@link OK} {@link Try} if {@code this} is {@link Err}
+     * @param okSupplier supplier of {@link Success} {@link Try}s
+     * @return {@code this}, or the supplied {@link Success} {@link Try} if {@code this} is {@link Failure}
      * @see #orElse(Object)
-     * @see #orElseErr(Exception)
-     * @see #orElseErr(Supplier)
      */
-    @NotNull V orElse(@NotNull Supplier<? extends V> okSupplier);
+    @NotNull V orElseGet(@NotNull Supplier<? extends V> okSupplier);
 
     /**
-     * Recover from an error; ignore the {@link Err} value if present,
-     * and apply the mapping function to get an {@link OK}.
+     * Recover from an error; ignore the {@link Failure} value if present,
+     * and apply the mapping function to get an {@link Success}.
      * <p>
-     * If this is an {@link OK}, return it without applying the mapping function.
+     * If this is an {@link Success}, return it without applying the mapping function.
      * </p>
      * <p>
      * This method is equivalent in alternative implementations to {@code orElseMap()}.
      * </p>
      *
-     * @param fnE2V {@link Function} that produces an {@link OK} value.
-     * @return A {@link OK} value, either the current {@link OK} if present, or the produced {@link OK} if not.
+     * @param fnFailureToSuccess {@link Function} that produces an {@link Success} value.
+     * @return A {@link Success} value, either the current {@link Success} if present, or the produced {@link Success} if not.
      * @throws NullPointerException if the Try of the mapping function is {@code null}.
      * @see #forfeit(Function)
      */
-    @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V);
+    @NotNull V recover(@NotNull Function<? super Throwable, ? extends V> fnFailureToSuccess);
+
 
     /**
-     * Return a {@link Stream}, containing either a single {@link Err} value, or an empty {@link Stream}
-     * if this is an {@link OK} value.
-     *
-     * @see #stream()
-     */
-    @NotNull Stream<E> streamErr();
-
-    /**
-     * Executes the action iff this is an {@link Err} {@link Try}.
-     *
-     * @return {@code this}
-     * @throws NullPointerException if the called action returns {@code null}.
-     * @see #match(Consumer)
-     * @see #biMatch(Consumer, Consumer)
-     */
-    @NotNull Try<V, E> matchErr(@NotNull Consumer<? super E> errConsumer);
-
-    /**
-     * If this is an {@link Err}, return a new {@link Err} value produced by the given mapping function.
-     * Otherwise, return the {@link OK} value.
+     * Forfeit (ignore) the {@link Success} value if present, and apply the mapping function to get an {@link Failure}.
      * <p>
-     * The type of the produced {@link Err} can be different. The mapping function is only invoked for
-     * {@link Err} values.
-     * </p>
-     * <p>
-     * This is equivalent to {@code map( leftMapper, Function.identity() )}.
-     * </p>
-     *
-     * @param errMapper the mapping function producing a new {@link Err} value.
-     * @return a new {@link Err} produced by the mapping function if this is {@link Err};
-     * otherwise, returns an {@link OK}.
-     * @throws NullPointerException if the Try of the mapping function is {@code null}
-     * @see #map(Function)
-     * @see #biMap(Function, Function)
-     */
-    @NotNull <E2 extends Exception> Try<V, E2> mapErr(@NotNull Function<? super E, ? extends E2> errMapper);
-
-    /**
-     * If this is an {@link Err}, return the new {@link Try} supplied by the mapping function.
-     * Note that while the {@link OK} type must remain the same, the {@link Err} type returned
-     * can be different.
-     * <p>
-     * This is also known as a left-{@code join()} in other implementations.
-     * </p>
-     * <p>
-     * No mapping is performed if this is an {@link OK}, and the mapping function is not invoked.
-     * </p>
-     *
-     * @param errMapper the mapping function that produces a new {@link Try}
-     * @return a new {@link Err} produced by the mapping function if this is {@link Err};
-     * otherwise, returns an {@link OK}.
-     * @throws NullPointerException if the Try of the mapping function is {@code null}
-     * @see #biFlatMap(Function, Function)
-     * @see #flatMap(Function)
-     */
-    @NotNull <E2 extends Exception> Try<V, E2> flatMapErr(@NotNull Function<? super E, ? extends Try<? extends V, ? extends E2>> errMapper);
-
-      /**
-     * Determines if this {@link Err} {@link Try} matches the given {@link Predicate}.
-     * <p>
-     * The {@link Predicate} is not invoked if this is an {@link OK} {@link Try}
-     * </p>
-     *
-     * @param errPredicate the {@link Predicate} to test
-     * @return {@code true} iff this is an {@link Err} {@link Try} and the {@link Predicate} matches.
-     * @see #containsErr(Exception) (Object)
-     * @see #contains(Object)
-     * @see #ifPredicate(Predicate)
-     */
-    boolean ifPredicateErr(@NotNull Predicate<E> errPredicate);
-
-    /**
-     * Determines if this {@link Err} {@link Try} contains the given value.
-     * <p>
-     * This will always return {@code false} for {@code null} values.
-     * </p>
-     *
-     * @param errValue value to compare
-     * @return {@code true} iff this is an {@link Err} {@link Try} and the contained value equals {@code errValue}
-     * @see #ifPredicateErr
-     * @see #ifPredicate
-     * @see #contains
-     */
-    boolean containsErr(@NotNull E errValue);
-
-    /**
-     * If this {@link Try} is an {@link OK}, return {@code errAlternate}.
-     * Otherwise, return {@code this} (an {@link Err} {@link Try}).
-     *
-     * @param errAlternate alternate {@link Err} {@link Try}
-     * @return {@code this}, or {@code leftAlternate} if {@code this} is an {@link OK}
-     * @see #orElse(Object)
-     * @see #orElse(Supplier)
-     */
-    @NotNull E orElseErr(@NotNull E errAlternate);
-
-    /**
-     * If this {@link Try} is an {@link OK}, return the supplied {@link Err}  {@link Try}.
-     * Otherwise, return {@code this} (an {@link Err} {@link Try}) without
-     * invoking the {@link Supplier}.
-     *
-     * @param errSupplier supplier of {@link Err} {@link Try}s
-     * @return {@code this}, or the supplied {@link Err} {@link Try} if {@code this} is {@link OK}
-     * @see #orElse(Object)
-     * @see #orElseErr(Supplier)
-     */
-    @NotNull E orElseErr(@NotNull Supplier<? extends E> errSupplier);
-
-    /**
-     * Forfeit (ignore) the {@link OK} value if present, and apply the mapping function to get an {@link Err}.
-     * <p>
-     * If this is an {@link Err}, return it without applying the mapping function.
+     * If this is an {@link Failure}, return it without applying the mapping function.
      * </p>
      * <p>
      * This method is equivalent in alternative implementations to {@code orElseMapErr()}.
      * </p>
      *
-     * @param fnV2E {@link Function} that produces an {@link Err} value.
-     * @return A {@link Err} value, either the current {@link Err} if present, or the produced {@link Err} if not.
+     * @param fnSuccessToFailure {@link Function} that produces an {@link Failure} value.
+     * @return A {@link Failure} value, either the current {@link Failure} if present, or the produced {@link Failure} if not.
      * @throws NullPointerException if the Try of the mapping function is {@code null}.
      * @see #recover(Function)
      */
-    @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E);
+    @NotNull Throwable forfeit(@NotNull Function<? super V, ? extends Throwable> fnSuccessToFailure);
+
 
     /**
-     * If {@code this} is {@link Err}, return it. Otherwise, return the next {@link Try} given.
-     * The next {@link Try} can have a different parameterized {@link OK} type.
      *
-     * @param nextTry The {@link Try} to return.
-     * @see #and(Supplier)
-     * @see #or(Try)
-     * @see #or(Supplier)
+     * @return V
+     * @throws NoSuchElementException if this is a {@Link Failure}, wrapping the Throwable.
      */
-    @NotNull <V2> Try<V2, E> and(@NotNull Try<V2, E> nextTry);
+    @NotNull V expect() throws NoSuchElementException;
 
-    /**
-     * If {@code this} is {@link Err}, return it (without invoking the {@link Supplier}).
-     * Otherwise, return the next {@link Try} supplied.
-     * The next {@link Try} can have a different parameterized {@link OK} type.
-     *
-     * @param nextTrySupplier The supplier of a {@link Try} to return; only called if {@code this} is {@link OK}.
-     * @throws NullPointerException if the supplied {@link Try} is {@code null}.
-     * @see #and(Try)
-     * @see #or(Try)
-     * @see #or(Supplier)
-     */
-    @NotNull <V2> Try<V2, E> and(@NotNull Supplier<Try<V2, E>> nextTrySupplier);
+    <X extends Exception> @NotNull V getOrThrow(@NotNull Function<? super Throwable, X> exFn) throws X;
 
-    /**
-     * If {@code this} is {@link OK}, return it.
-     * Otherwise, return the next {@link Try} given.
-     * The next {@link Try}  can have a different parameterized {@link Err} type.
-     *
-     * @param nextTry The {@link Try} to return.
-     * @see #or(Supplier)
-     * @see #and(Try)
-     * @see #and(Supplier)
-     */
-    @NotNull <E2 extends Exception> Try<V, E2> or(@NotNull Try<V, E2> nextTry);
 
-    /**
-     * If {@code this} is {@link OK}, return it (without invoking the {@link Supplier}).
-     * Otherwise, return the next {@link Try} supplied.
-     * The next {@link Try} can have a different parameterized {@link Err} type.
-     *
-     * @param nextTrySupplier The supplier of a {@link Try} to return; only called if {@code this} is {@link Err}.
-     * @throws NullPointerException if the supplier is called and returns {@code null}.
-     * @see #or(Try)
-     * @see #and(Try)
-     * @see #and(Supplier)
-     */
-    @NotNull <E2 extends Exception> Try<V, E2> or(@NotNull Supplier<Try<V, E2>> nextTrySupplier);
 
-    /**
-     * Expect success (an {@link OK} value), otherwise throw a <strong>runtime</strong> Exception.
-     * <p>
-     * This always will throw for {@link Err}. If {@link Err} is a checked exception, this will
-     * throw a checked Exception.
-     * <p>
-     * This is similar to {@code getOrThrow()}; a value is expected or an exception is thrown.
-     *
-     * @return Value (if {@link OK}))
-     * @throws E ({@link Exception} held by {@link Err}).
-     * @see #getOrThrow(Function)
-     */
-    @NotNull V expect() throws E;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Internal helper methods
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private static <IN, OUT> Try<OUT> mapChecked(IN in, ExFunction<? super IN, ? extends OUT> fn) {
+        try {
+            return Success.of(  fn.apply( in ) );
+        } catch (Throwable t) {
+            return Failure.of( t );
+        }
+    }
 
-    /**
-     * Throw the given supplied {@link Exception} (or more precisely, {@link Throwable}).
-     * <p>
-     * This method can wrap an {@link Err} type if that {@link Err} type is allowed by the constructor.
-     * This can also convert Exceptions; e.g., using an {@link java.io.UncheckedIOException} to wrap
-     * an {@link java.io.IOException} via {@code orThrow(UncheckedIOException::new)}.
-     * </p>
-     *
-     * @param exFn Exception producing function
-     * @param <X>  Throwable (Exception) created by {@code exFn}
-     * @return Value V
-     * @throws X Throwable
-     * @see #expect()
-     */
-    @NotNull <X extends Exception> V getOrThrow(@NotNull Function<E, X> exFn) throws X;
+    @SuppressWarnings("unchecked")
+    private static <IN, OUT> Try<OUT> flatMapChecked(IN in, ExFunction<? super IN, ? extends Try<? extends OUT>> fn) {
+        try {
+            return (Try<OUT>)  requireNonNull( fn.apply( in ) );
+        } catch (Throwable t) {
+            return Failure.of( t );
+        }
+    }
 
-    /**
-     * Represents a successful result with a value of type V.
-     * Implements the Try interface.
-     *
-     * @param <V> the type of the value in the result
-     * @param <E> the type of the exception that may occur
-     */
-    record OK<V, E extends Exception>(V value) implements Try<V, E> {
-        /**
-         * Checks if the given value is non-null.
-         *
-         * @param value the value to be checked
-         * @throws NullPointerException if the value is null
-         */
-        public OK {
-            requireNonNull( value, "OK: cannot be null!" );
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Implementation
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    record Success<T>(@NotNull T value) implements Try<T> {
+        public Success {
+            Objects.requireNonNull( value );
         }
 
-        /**
-         * Get the OK value V
-         *
-         * @return V
-         */
-        public @NotNull V get() {
-            return value;
+        public static Success<Empty> of() {
+            return new Success<>( Empty.getInstance() );
+
+        }
+
+        public static <U> Success<U> of(final U value) {
+            return new Success<>( value );
+
+        }
+
+        @Override
+        public boolean isFailure() {
+            return false;
+        }
+
+        @Override
+        public boolean isSuccess() {
+            return true;
         }
 
 
         @Override
-        public @NotNull Optional<V> ok() {
-            return Optional.of( value );
+        public @NotNull <V2> Try<V2> biFlatMap(@NotNull ExFunction<? super T, ? extends Try<? extends V2>> fnSuccess,
+                                               @NotNull ExFunction<? super Throwable, ? extends Try<? extends V2>> fnFailure) {
+            Objects.requireNonNull( fnFailure );
+            return flatMap( fnSuccess );
         }
 
         @Override
-        public @NotNull Optional<E> err() {
-            return Optional.empty();
+        public @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super T, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
+            Objects.requireNonNull( fnSuccess );
+            Objects.requireNonNull( fnFailure );
+            return Try.mapChecked( value, fnSuccess );
         }
 
         @Override
-        public @NotNull Try<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer) {
-            requireNonNull( okConsumer );
-            requireNonNull( errConsumer );
-            okConsumer.accept( value );
-            return this;
+        public <T1> @NotNull T1 fold(@NotNull Function<? super T, ? extends T1> fnSuccess,
+                                     @NotNull Function<? super Throwable, ? extends T1> fnFailure) {
+            Objects.requireNonNull( fnSuccess );
+            Objects.requireNonNull( fnFailure );
+            return Objects.requireNonNull( fnSuccess.apply( value ) );
         }
 
-        @Override
-        public @NotNull <V2, E2 extends Exception> Try<V2, E2> biMap(@NotNull Function<? super V, ? extends V2> okMapper, @NotNull Function<? super E, ? extends E2> errMapper) {
-            requireNonNull( okMapper );
-            requireNonNull( errMapper );
-            return new OK<>( okMapper.apply( value ) );
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public @NotNull <V2, E2 extends Exception> Try<V2, E2> biFlatMap(@NotNull Function<? super V, ? extends Try<? extends V2, ? extends E2>> okMapper, @NotNull Function<? super E, ? extends Try<? extends V2, ? extends E2>> errMapper) {
-            requireNonNull( okMapper );
-            requireNonNull( errMapper );
-            return (Try<V2, E2>)  requireNonNull( okMapper.apply( value ));
-        }
 
         @Override
-        public <T> @NotNull T fold(@NotNull Function<? super V, ? extends T> fnOK, @NotNull Function<? super E, ? extends T> fnErr) {
-            requireNonNull( fnOK );
-            requireNonNull( fnErr );
-            return requireNonNull( fnOK.apply( value ) );
-        }
-
-        @Override
-        public @NotNull Stream<V> stream() {
+        public @NotNull Stream<T> stream() {
             return Stream.of( value );
         }
 
-
         @Override
-        public @NotNull Try<V, E> filter(@NotNull Predicate<? super V> predicate, @NotNull Function<? super V, ? extends E> mapper) {
+        public @NotNull Try<T> filter(@NotNull Predicate<? super T> predicate,
+                                      @NotNull ExFunction<? super T, ? extends Throwable> fnUnmatched) {
+
             requireNonNull( predicate );
-            requireNonNull( mapper );
+            requireNonNull( fnUnmatched );
+
             if (predicate.test( value )) {
                 return this;
             }
-            return new Err<>( mapper.apply( value ) );
+
+            try {
+                return Failure.of( fnUnmatched.apply( value ) );
+            } catch (Throwable t) {
+                return Failure.of( t );
+            }
         }
 
         @Override
-        public @NotNull Try<V, E> match(@NotNull Consumer<? super V> okConsumer) {
-            requireNonNull( okConsumer );
-            okConsumer.accept( value );
+        public @NotNull Try<T> exec(@NotNull Consumer<? super T> successConsumer) {
+            requireNonNull( successConsumer );
+            try {
+                successConsumer.accept( value );
+                return this;
+            } catch (Throwable t) {
+                return Failure.of( t );
+            }
+        }
+
+        @Override
+        public void consume(@NotNull Consumer<? super T> successConsumer) {
+            requireNonNull( successConsumer );
+            successConsumer.accept( value );
+        }
+
+        @Override
+        public void consumeErr(@NotNull Consumer<? super Throwable> failureConsumer) {
+            requireNonNull( failureConsumer );
+            // do nothing
+        }
+
+        @Override
+        public @NotNull <V2> Try<V2> map(@NotNull ExFunction<? super T, ? extends V2> fnSuccess) {
+            requireNonNull( fnSuccess );
+            return mapChecked(value, fnSuccess);
+        }
+
+        @Override
+        public @NotNull <V2> Try<V2> flatMap(@NotNull ExFunction<? super T, ? extends Try<? extends V2>> fnSuccess) {
+            requireNonNull( fnSuccess );
+            return Try.flatMapChecked( value, fnSuccess );
+        }
+
+        @Override
+        public @NotNull Try<T> mapErr(@NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
+            requireNonNull( fnFailure );
             return this;
         }
 
         @Override
-        public @NotNull <V2> Try<V2, E> map(@NotNull Function<? super V, ? extends V2> okMapper) {
-            requireNonNull( okMapper );
-            return new OK<>( okMapper.apply( value ) );
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public @NotNull <V2> Try<V2, E> flatMap(@NotNull Function<? super V, ? extends Try<? extends V2, ? extends E>> okMapper) {
-            requireNonNull( okMapper );
-            return (Try<V2, E>) requireNonNull( okMapper.apply( value ) );
+        public @NotNull Try<T> flatMapErr(@NotNull ExFunction<? super Throwable, ? extends Try<? extends T>> fnFailure) {
+            requireNonNull( fnFailure );
+            return this;
         }
 
         @Override
-        public boolean ifPredicate(@NotNull Predicate<V> okPredicate) {
+        public boolean ifPredicate(@NotNull Predicate<T> okPredicate) {
             requireNonNull( okPredicate );
             return okPredicate.test( value );
         }
 
         @Override
-        public boolean contains(@Nullable V okValue) {
+        public boolean contains(@Nullable T okValue) {
             return Objects.equals( value, okValue );
         }
 
-
         @Override
-        public @NotNull V orElse(@NotNull V okAlternate) {
+        public @NotNull T orElse(@NotNull T okAlternate) {
             requireNonNull( okAlternate );
             return value;
         }
 
         @Override
-        public @NotNull V orElse(@NotNull Supplier<? extends V> okSupplier) {
+        public @NotNull T orElseGet(@NotNull Supplier<? extends T> okSupplier) {
             requireNonNull( okSupplier );
             return value;
         }
 
         @Override
-        public @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V) {
-            requireNonNull( fnE2V );
+        public @NotNull T recover(@NotNull Function<? super Throwable, ? extends T> fnFailureToSuccess) {
+            requireNonNull( fnFailureToSuccess );
+            return value;
+        }
+
+
+        @Override
+        public @NotNull Throwable forfeit(@NotNull Function<? super T, ? extends Throwable> fnSuccessToFailure) {
+            requireNonNull( fnSuccessToFailure );
+            return requireNonNull( fnSuccessToFailure.apply( value ) );
+        }
+
+
+        @Override
+        public @NotNull T expect() throws NoSuchElementException {
             return value;
         }
 
         @Override
-        public @NotNull Stream<E> streamErr() {
-            return Stream.empty();
-        }
-
-
-        @Override
-        public @NotNull Try<V, E> matchErr(@NotNull Consumer<? super E> errConsumer) {
-            requireNonNull( errConsumer );
-            return this;
-        }
-
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> mapErr(@NotNull Function<? super E, ? extends E2> errMapper) {
-            requireNonNull( errMapper );
-            return coerce();
-        }
-
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> flatMapErr(@NotNull Function<? super E, ? extends Try<? extends V, ? extends E2>> errMapper) {
-            requireNonNull( errMapper );
-            return coerce();
-        }
-
-        @Override
-        public boolean ifPredicateErr(@NotNull Predicate<E> errPredicate) {
-            requireNonNull( errPredicate );
-            return false;
-        }
-
-        @Override
-        public boolean containsErr(@NotNull E errValue) {
-            requireNonNull( errValue );
-            return false;
-        }
-
-        @Override
-        public @NotNull E orElseErr(@NotNull E errAlternate) {
-            requireNonNull( errAlternate );
-            return errAlternate;
-        }
-
-        @Override
-        public @NotNull E orElseErr(@NotNull Supplier<? extends E> errSupplier) {
-            requireNonNull( errSupplier );
-            return requireNonNull( errSupplier.get() );
-        }
-
-        @Override
-        public @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E) {
-            requireNonNull( fnV2E );
-            return requireNonNull( fnV2E.apply( value ) );
-        }
-
-        @Override
-        public @NotNull <V2> Try<V2, E> and(@NotNull Try<V2, E> nextTry) {
-            requireNonNull( nextTry );
-            return nextTry;
-        }
-
-        @Override
-        public @NotNull <V2> Try<V2, E> and(@NotNull Supplier<Try<V2, E>> nextTrySupplier) {
-            requireNonNull( nextTrySupplier );
-            return requireNonNull( nextTrySupplier.get() );
-        }
-
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> or(@NotNull Try<V, E2> nextTry) {
-            requireNonNull( nextTry );
-            return coerce();
-        }
-
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> or(@NotNull Supplier<Try<V, E2>> nextTrySupplier) {
-            requireNonNull( nextTrySupplier );
-            return coerce();
-        }
-
-        @Override
-        public @NotNull V expect() throws E {
+        public <X extends Exception> @NotNull T getOrThrow(@NotNull Function<? super Throwable, X> exFn) throws X {
+            requireNonNull( exFn );
             return value;
         }
-
-        @Override
-        public <X extends Exception> @NotNull V getOrThrow(@NotNull Function<E, X> exFn) throws X {
-            return value;
-        }
-
-        // coerce empty exception to new type
-        @SuppressWarnings("unchecked")
-        private <E2 extends Exception> OK<V, E2> coerce() {
-            return (OK<V, E2>) this;
-        }
-
     }
 
 
-    /**
-     * The Err class represents the error result of a Try.
-     * It holds an exception object.
-     *
-     * @param <V> the type of the success value
-     * @param <E> the type of the exception
-     */
-    record Err<V, E extends Exception>(E error) implements Try<V, E> {
-        /**
-         * Checks if the specified error is not null.
-         *
-         * @param error the error object to check
-         * @throws NullPointerException if the error is null
-         */
-        public Err {
-            requireNonNull( error, "Err: cannot be null!" );
+
+    record Failure<T>(@NotNull Throwable err) implements Try<T> {
+
+        public Failure {
+            Objects.requireNonNull( err );
+            throwIfFatal( err );
         }
 
-        /**
-         * Get the Err value E
-         *
-         * @return E
-         */
-        public @NotNull E get() {
-            return error;
+        public static <U> Failure<U> of(Throwable t) {
+            return new Failure<>( t );
+        }
+
+        @Override
+        public boolean isFailure() {
+            return true;
+        }
+
+        @Override
+        public boolean isSuccess() {
+            return false;
         }
 
 
         @Override
-        public @NotNull Optional<V> ok() {
-            return Optional.empty();
+        public @NotNull <V2> Try<V2> biFlatMap(@NotNull ExFunction<? super T, ? extends Try<? extends V2>> fnSuccess,
+                                               @NotNull ExFunction<? super Throwable, ? extends Try<? extends V2>> fnFailure) {
+            Objects.requireNonNull( fnSuccess );
+            Objects.requireNonNull( fnFailure );
+            return Try.flatMapChecked( err, fnFailure );
         }
 
         @Override
-        public @NotNull Optional<E> err() {
-            return Optional.of( error );
+        public @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super T, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
+            Objects.requireNonNull( fnSuccess );
+            Objects.requireNonNull( fnFailure );
+            return failMap(fnFailure);
         }
 
-
-        @Override
-        public @NotNull Try<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer) {
-            requireNonNull( okConsumer );
-            requireNonNull( errConsumer );
-            errConsumer.accept( error );
-            return this;
-        }
-
-        @Override
-        public @NotNull <V2, E2 extends Exception> Try<V2, E2> biMap(@NotNull Function<? super V, ? extends V2> okMapper, @NotNull Function<? super E, ? extends E2> errMapper) {
-            requireNonNull( okMapper );
-            requireNonNull( errMapper );
-            return new Err<>( errMapper.apply( error ) );
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public @NotNull <V2, E2 extends Exception> Try<V2, E2> biFlatMap(@NotNull Function<? super V, ? extends Try<? extends V2, ? extends E2>> okMapper, @NotNull Function<? super E, ? extends Try<? extends V2, ? extends E2>> errMapper) {
-            requireNonNull( okMapper );
-            requireNonNull( errMapper );
-            return (Try<V2, E2>) requireNonNull( errMapper.apply( error ) );
+        // Failures can only be mapped to failures if the fail, and if the failure mapping fails,
+        // it still fails. It's failure all the way down!
+        private <V2> Try<V2> failMap(ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
+            try {
+                return Failure.of( requireNonNull( fnFailure.apply( err ) ) );
+            } catch (Throwable t) {
+                return Failure.of( t );
+            }
         }
 
         @Override
-        public <T> @NotNull T fold(@NotNull Function<? super V, ? extends T> fnOK, @NotNull Function<? super E, ? extends T> fnErr) {
-            requireNonNull( fnOK );
-            requireNonNull( fnErr );
-            return requireNonNull( fnErr.apply( error ) );
+        public <U> @NotNull U fold(@NotNull Function<? super T, ? extends U> fnSuccess, @NotNull Function<? super Throwable, ? extends U> fnFailure) {
+            Objects.requireNonNull( fnSuccess );
+            Objects.requireNonNull( fnFailure );
+            return Objects.requireNonNull( fnFailure.apply( err ) );
         }
 
         @Override
-        public @NotNull Stream<V> stream() {
+        public @NotNull Stream<T> stream() {
             return Stream.empty();
         }
 
         @Override
-        public @NotNull Try<V, E> filter(@NotNull Predicate<? super V> predicate, @NotNull Function<? super V, ? extends E> mapper) {
-            requireNonNull( predicate );
-            requireNonNull( mapper );
+        public @NotNull Try<T> filter(@NotNull Predicate<? super T> predicate, @NotNull ExFunction<? super T, ? extends Throwable> fnUnmatched) {
+            Objects.requireNonNull( predicate );
+            Objects.requireNonNull( fnUnmatched );
             return this;
         }
 
         @Override
-        public @NotNull Try<V, E> match(@NotNull Consumer<? super V> okConsumer) {
-            requireNonNull( okConsumer );
+        public @NotNull Try<T> exec(@NotNull Consumer<? super T> successConsumer) {
+            Objects.requireNonNull( successConsumer );
             return this;
         }
 
         @Override
-        public @NotNull <V2> Try<V2, E> map(@NotNull Function<? super V, ? extends V2> okMapper) {
-            requireNonNull( okMapper );
+        public void consume(@NotNull Consumer<? super T> successConsumer) {
+            Objects.requireNonNull( successConsumer );
+        }
+
+        @Override
+        public @NotNull <V2> Try<V2> map(@NotNull ExFunction<? super T, ? extends V2> fnSuccess) {
+            Objects.requireNonNull( fnSuccess );
             return coerce();
         }
 
         @Override
-        public @NotNull <V2> Try<V2, E> flatMap(@NotNull Function<? super V, ? extends Try<? extends V2, ? extends E>> okMapper) {
-            requireNonNull( okMapper );
+        public @NotNull <V2> Try<V2> flatMap(@NotNull ExFunction<? super T, ? extends Try<? extends V2>> fnSuccess) {
+            Objects.requireNonNull( fnSuccess );
             return coerce();
         }
 
         @Override
-        public boolean ifPredicate(@NotNull Predicate<V> okPredicate) {
+        public @NotNull Try<T> mapErr(@NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
+            requireNonNull( fnFailure );
+            return failMap( fnFailure );
+        }
+
+        @Override
+        public @NotNull Try<T> flatMapErr(@NotNull ExFunction<? super Throwable, ? extends Try<? extends T>> fnFailure) {
+            requireNonNull( fnFailure );
+            return Try.flatMapChecked( err, fnFailure );
+        }
+
+        @Override
+        public boolean ifPredicate(@NotNull Predicate<T> okPredicate) {
             requireNonNull( okPredicate );
             return false;
         }
 
         @Override
-        public boolean contains(@Nullable V okValue) {
+        public boolean contains(@Nullable T okValue) {
             requireNonNull( okValue );
             return false;
         }
 
         @Override
-        public @NotNull V orElse(@NotNull V okAlternate) {
+        public @NotNull T orElse(@NotNull T okAlternate) {
             requireNonNull( okAlternate );
             return okAlternate;
         }
 
         @Override
-        public @NotNull V orElse(@NotNull Supplier<? extends V> okSupplier) {
+        public @NotNull T orElseGet(@NotNull Supplier<? extends T> okSupplier) {
             requireNonNull( okSupplier );
-            return requireNonNull( okSupplier.get() );
+            return Objects.requireNonNull( okSupplier.get() );
         }
 
         @Override
-        public @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V) {
-            requireNonNull( fnE2V );
-            return requireNonNull( fnE2V.apply( error ) );
+        public @NotNull T recover(@NotNull Function<? super Throwable, ? extends T> fnFailureToSuccess) {
+            requireNonNull( fnFailureToSuccess );
+            return Objects.requireNonNull( fnFailureToSuccess.apply( err ) );
         }
 
         @Override
-        public @NotNull Stream<E> streamErr() {
-            return Stream.of( error );
-        }
-
-        @Override
-        public @NotNull Try<V, E> matchErr(@NotNull Consumer<? super E> errConsumer) {
-            requireNonNull( errConsumer );
-            errConsumer.accept( error );
-            return this;
-        }
-
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> mapErr(@NotNull Function<? super E, ? extends E2> errMapper) {
-            requireNonNull( errMapper );
-            return new Err<>( errMapper.apply( error ) );
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> flatMapErr(@NotNull Function<? super E, ? extends Try<? extends V, ? extends E2>> errMapper) {
-            requireNonNull( errMapper );
-            return (Try<V, E2>) requireNonNull( errMapper.apply( error ) );
-        }
-
-        @Override
-        public boolean ifPredicateErr(@NotNull Predicate<E> errPredicate) {
-            requireNonNull( errPredicate );
-            return errPredicate.test( error );
-        }
-
-        @Override
-        public boolean containsErr(@Nullable E errValue) {
-            requireNonNull( errValue );
-            return Objects.equals( error, errValue );
-        }
-
-        @Override
-        public @NotNull E orElseErr(@NotNull E errAlternate) {
-            requireNonNull( errAlternate );
-            return error;
-        }
-
-        @Override
-        public @NotNull E orElseErr(@NotNull Supplier<? extends E> errSupplier) {
-            requireNonNull( errSupplier );
-            return error;
-        }
-
-        @Override
-        public @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E) {
-            requireNonNull( fnV2E );
-            return error;
-        }
-
-        @Override
-        public @NotNull <V2> Try<V2, E> and(@NotNull Try<V2, E> nextResult) {
-            requireNonNull( nextResult );
-            return coerce();
-        }
-
-        @Override
-        public @NotNull <V2> Try<V2, E> and(@NotNull Supplier<Try<V2, E>> nextResultSupplier) {
-            requireNonNull( nextResultSupplier );
-            return coerce();
-        }
-
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> or(@NotNull Try<V, E2> nextResult) {
-            requireNonNull( nextResult );
-            return nextResult;
-        }
-
-        @Override
-        public @NotNull <E2 extends Exception> Try<V, E2> or(@NotNull Supplier<Try<V, E2>> nextResultSupplier) {
-            requireNonNull( nextResultSupplier );
-            return requireNonNull( nextResultSupplier.get() );
+        public @NotNull Throwable forfeit(@NotNull Function<? super T, ? extends Throwable> fnSuccessToFailure) {
+            requireNonNull( fnSuccessToFailure );
+            return err;
         }
 
 
         @Override
-        public @NotNull V expect() throws E {
-            throw error;
+        public void consumeErr(@NotNull Consumer<? super Throwable> failureConsumer) {
+            requireNonNull( failureConsumer );
+            failureConsumer.accept( err );
+        }
+
+
+        @Override
+        public @NotNull T expect() throws NoSuchElementException {
+            throw new NoSuchElementException(err);
         }
 
         @Override
-        public <X extends Exception> @NotNull V getOrThrow(@NotNull Function<E, X> exFn) throws X {
+        public <X extends Exception> @NotNull T getOrThrow(@NotNull Function<? super Throwable, X> exFn) throws X {
             requireNonNull( exFn );
-            throw requireNonNull( exFn.apply( error ) );
+            throw requireNonNull( exFn.apply( err ) );
         }
 
-        // coerce empty value to new type
+
+
         @SuppressWarnings("unchecked")
-        private <V2> Err<V2, E> coerce() {
-            return (Err<V2, E>) this;
+        private <V2> Failure<V2> coerce() {
+            return (Failure<V2>) this;
         }
+
+        /**
+         * Throwables which are truly fatal that we will not capture.
+         */
+        private static void throwIfFatal(final Throwable t) {
+            // TODO: add MatchException when we target JDK > 20
+            //           and restructure to a switch-case w/pattern
+            if (t instanceof VirtualMachineError || t instanceof LinkageError) {
+                // Errors are similar to unchecked exceptions
+                throw (Error) t;
+            } else if (t instanceof InterruptedException) {
+                sneakyThrow( t );
+            }
+        }
+
+
     }
 
 

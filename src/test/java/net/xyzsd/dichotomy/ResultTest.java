@@ -448,12 +448,12 @@ class ResultTest {
 
     @Test
     void orThrowWrapped() {
-        final String s = assertDoesNotThrow( () -> OK.getOrThrowMapped( neverFunction() ) );
+        final String s = assertDoesNotThrow( () -> OK.getOrThrow( neverFunction() ) );
         assertEquals( OK_VALUE, s );
 
         assertThrows(
                 IOException.class,
-                () -> ERR.getOrThrowMapped( IOException::new )
+                () -> ERR.getOrThrow( IOException::new )
         );
         assertThrows(
                 RuntimeException.class,
@@ -465,31 +465,17 @@ class ResultTest {
         final Result<?,String> result = Result.ofErr( MESSAGE );
         assertThrows(
                 IOException.class,
-                () -> result.getOrThrowMapped( IOException::new )
+                () -> result.getOrThrow( IOException::new )
         );
 
         try {
-            result.getOrThrowMapped( IOException::new );
+            result.getOrThrow( IOException::new );
         } catch(IOException e) {
             assertEquals( MESSAGE, e.getMessage() );
         }
     }
 
-    @Test
-    void orThrow() {
-        final String s = assertDoesNotThrow( () -> OK.getOrThrow( neverSupplier() ) );
 
-        assertEquals( OK_VALUE, s );
-
-        assertThrows(
-                IOException.class,
-                () -> ERR.getOrThrow( IOException::new )
-        );
-        assertThrows(
-                RuntimeException.class,
-                () -> ERR.getOrThrow( RuntimeException::new )
-        );
-    }
 
     @Test
     void monadicLaws() {

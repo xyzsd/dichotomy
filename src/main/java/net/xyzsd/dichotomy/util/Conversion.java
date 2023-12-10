@@ -5,6 +5,8 @@ import net.xyzsd.dichotomy.Result;
 import net.xyzsd.dichotomy.trying.Try;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+
 
 /**
  * Conversion utilities.
@@ -39,13 +41,12 @@ public interface Conversion {
      * and the right value represents the result of the try operation.
      *
      * @param <V> the type of the right value in the {@link Either}
-     * @param <X> the type of the exception in the {@link Try}
      * @param tri a {@link Try} object to be converted into an {@link Either} object
      * @return an {@link Either} object representing the converted {@link Try} result
      * @throws IllegalArgumentException if the {@code tri} parameter is null
      */
     @NotNull
-    static <V, X extends Exception> Either<X, V> toEither(@NotNull Try<V, X> tri) {
+    static <V> Either<Throwable, V> toEither(@NotNull Try<V> tri) {
         return tri.fold( Either::ofRight, Either::ofLeft );
     }
 
@@ -69,13 +70,12 @@ public interface Conversion {
      * Converts a {@link Try} object into a {@link Result} object.
      *
      * @param <V> the type of the value in the {@link Result}
-     * @param <X> the type of the exception in the {@link Try}
      * @param tri a {@link Try} object to be converted into a {@link Result}
      * @return a {@link Result} object representing the converted {@link Try} result
      * @throws IllegalArgumentException if the {@code tri} parameter is null
      */
     @NotNull
-    static <V, X extends Exception> Result<V, X> toResult(@NotNull Try<V, X> tri) {
+    static <V> Result<V, Throwable> toResult(@NotNull Try<V> tri) {
         return tri.fold( Result::ofOK, Result::ofErr );
     }
 
@@ -91,8 +91,8 @@ public interface Conversion {
      * @throws IllegalArgumentException if the {@code either} parameter is null
      */
     @NotNull
-    static <L extends Exception, R> Try<R, L> toTry(@NotNull Either<L, R> either) {
-        return either.fold( Try.Err::new, Try.OK::new );
+    static <L extends Exception, R> Try<R> toTry(@NotNull Either<L, R> either) {
+        return either.fold( Try::ofFailure, Try::ofSuccess );
     }
 
 
@@ -107,8 +107,8 @@ public interface Conversion {
      * @throws IllegalArgumentException if the {@code result} parameter is null
      */
     @NotNull
-    static <V, X extends Exception> Try<V, X> toTry(@NotNull Result<V, X> result) {
-        return result.fold( Try.OK::new, Try.Err::new );
+    static <V, X extends Exception> Try<V> toTry(@NotNull Result<V, X> result) {
+        return result.fold( Try::ofSuccess, Try::ofFailure );
     }
 
 

@@ -9,28 +9,26 @@ import java.util.function.Supplier;
 // Test utilities
 public interface TestUtils {
 
-    // TODO: needs to be in a common util class; copied from EitherTest
-    // 'never' types: check if implementation calls a supplier / function when it doesn't need to
-    // Using rawtypes is easier. if the cast fails... we have an error anyway
-
     // A supplier that should NOT be invoked
+    // For simplicity, we throw a fatal nonchecked Error, rather than the preferred IllegalStateException.
+    // This way we can check that these are thrown when testing a Try.
     Supplier<Object> NEVERSUPPLIER = () -> {
-        throw new IllegalStateException( "NEVERSUPPLIER::get invoked!" );
+        throw new LinkageError( "NEVERSUPPLIER::get invoked!" );
     };
 
     // A function that should NOT be invoked
     Function<Object, Object> NEVERFUNCTION = (x) -> {
-        throw new IllegalStateException( "NEVERFUNCTION::apply invoked!" );
+        throw new LinkageError( "NEVERFUNCTION::apply invoked!" );
     };
 
     // a runner that should NOT be invoked
     Runnable NEVERRUNNABLE = () -> {
-        throw new IllegalStateException( "NEVERRUN was invoked!" );
+        throw new LinkageError( "NEVERRUN was invoked!" );
     };
 
     // a consumer that should NOT be invoked
     Consumer<Object> NEVERCONSUMER = (x) -> {
-        throw new IllegalStateException( "NEVERCONSUMER was invoked!" );
+        throw new LinkageError( "NEVERCONSUMER was invoked!" );
     };
 
 
@@ -82,7 +80,7 @@ public interface TestUtils {
 
         private static void verifyUnused(final int counter) {
             if (counter < 0) {
-                throw new IllegalStateException( "ILLEGAL re-use of single use item after query. Create a new item!" );
+                throw new IllegalStateException( "ILLEGAL re-use of single use item after query. Improperly written test? Create a new item!" );
             }
         }
 
