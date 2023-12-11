@@ -15,7 +15,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A right-biased Either monad implementation.
  * <blockquote>
- * {@code Eithers hold Left or Right values,}<br>
+ * {@code An Either holds Left or Right values,}<br>
  * {@code but never both or neither,}<br>
  * {@code otherwise it'd be a tuple,}<br>
  * {@code rather than an Either.}
@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * Features:
  * <ul>
- *     <li>{@link Left} and {@link Right} values cannot hold {@code null}. The {@link Empty} type could be used instead.</li>
+ *     <li>{@link Left} and {@link Right} values cannot hold {@code null}. The {@link Empty} type can be used instead.</li>
  *     <li>Right-biased; methods not ending in {@code Left} operate on {@link Right} values.
  *          However, the {@code xxxLeft} methods are provided so that a {@link #swap}() is not required. </li>
  *     <li>Sealed; can be used in {@code switch} statements and deconstruction patterns.</li>
@@ -49,6 +49,11 @@ public sealed interface Either<L, R> {
      * <p>
      * By convention, the left-sided value is the abnormal / unexpected / error value.
      * </p>
+     *
+     * @param value left value
+     * @param <L>   left parameter
+     * @param <R>   right parameter
+     * @return an Either.Left
      */
     @NotNull
     static <L, R> Either<L, R> ofLeft(@NotNull L value) {
@@ -60,6 +65,11 @@ public sealed interface Either<L, R> {
      * <p>
      * By convention, the right-sided value is the normal / expected value.
      * </p>
+     *
+     * @param value right value
+     * @param <L>   left parameter
+     * @param <R>   right parameter
+     * @return an Either.Right
      */
     @NotNull
     static <L, R> Either<L, R> ofRight(@NotNull R value) {
@@ -96,7 +106,9 @@ public sealed interface Either<L, R> {
      * the value of this {@link Either}.
      *
      * @return {@code this}
-     * @throws NullPointerException if the called action returns {@code null}.
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
+     * @param leftConsumer consumer executed if this is an {@code Either.Left}
+     * @param rightConsumer consumer executed if this is an {@code Either.Right}
      * @see #match(Consumer)
      * @see #matchLeft(Consumer)
      */
@@ -111,8 +123,10 @@ public sealed interface Either<L, R> {
      *
      * @param fnLeft  the mapping function for {@link Left} values.
      * @param fnRight the mapping function for {@link Right} values.
+     * @param <R2> right value type, which may be different from the original type
+     * @param <L2> left value type, which may be different from the original type
      * @return the {@link Either} produced from {@code fnLeft} or {@code fnRight}
-     * @throws NullPointerException if the called function returns {@code null}.
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
      * @see #map(Function)
      * @see #mapLeft(Function)
      */
@@ -130,7 +144,7 @@ public sealed interface Either<L, R> {
      * @param <L2>    New {@link Left} value
      * @param <R2>    New {@link Right} value
      * @return the {@link Either} produced from {@code fnLeft} or {@code fnRight}
-     * @throws NullPointerException if the called function returns {@code null}.
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
      * @see #map(Function)
      * @see #mapLeft(Function)
      */
@@ -152,7 +166,7 @@ public sealed interface Either<L, R> {
      * @param fnRight the mapping function for {@link Right} values.
      * @param <T>     common type returned by mapping functions.
      * @return the value produced from {@code fnLeft} or {@code fnRight}
-     * @throws NullPointerException if the called function returns {@code null}.
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
      * @see #recover(Function)
      * @see #forfeit(Function)
      */
@@ -175,7 +189,8 @@ public sealed interface Either<L, R> {
      * @param predicate the predicate used to test {@link Right} values.
      * @param mapper    the mapping function for {@link Right} values that do not match the predicate.
      * @return an {@link Either} based on the algorithm described above.
-     * @throws NullPointerException if the called mapping function returns {@code null}.
+     *  @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
+
      */
     @NotNull Either<L, R> filter(@NotNull Predicate<? super R> predicate,
                                  @NotNull Function<? super R, ? extends L> mapper);
@@ -301,6 +316,7 @@ public sealed interface Either<L, R> {
      * </p>
      *
      * @param rightMapper the mapping function producing a new {@link Right} value.
+     * @param <R2> right value type, which may be different from the original type
      * @return a new {@link Right} produced by the mapping function if this is {@link Right};
      * otherwise, returns a {@link Left}.
      * @throws NullPointerException if the result of the mapping function is {@code null}
@@ -321,6 +337,7 @@ public sealed interface Either<L, R> {
      * </p>
      *
      * @param rightMapper the mapping function that produces a new {@link Either}
+     * @param <R2> right value type, which may be different from the original type
      * @return a new {@link Right} produced by the mapping function if this is {@link Right};
      * otherwise, returns a {@link Left}.
      * @throws NullPointerException if the result of the mapping function is {@code null}
@@ -342,6 +359,7 @@ public sealed interface Either<L, R> {
      * </p>
      *
      * @param leftMapper the mapping function producing a new {@link Left} value.
+     * @param <L2> left value type, which may be different from the original type
      * @return a new {@link Left} produced by the mapping function if this is {@link Left};
      * otherwise, returns a {@link Right}.
      * @throws NullPointerException if the result of the mapping function is {@code null}
@@ -363,6 +381,7 @@ public sealed interface Either<L, R> {
      * </p>
      *
      * @param leftMapper the mapping function that produces a new {@link Either}
+     * @param <L2> left value type, which may be different from the original type
      * @return a new {@link Left} produced by the mapping function if this is {@link Left};
      * otherwise, returns a {@link Right}.
      * @throws NullPointerException if the result of the mapping function is {@code null}
@@ -375,8 +394,8 @@ public sealed interface Either<L, R> {
     /**
      * Executes the action iff this is a {@link Left} {@link Either}.
      *
-     * @return {@code this}
      * @param leftConsumer the consumer function to be executed
+     * @return {@code this}
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #biMatch(Consumer, Consumer)
@@ -386,8 +405,8 @@ public sealed interface Either<L, R> {
     /**
      * Executes the action iff this is a {@link Right} {@link Either}.
      *
-     * @return {@code this}
      * @param rightConsumer the consumer function to be executed
+     * @return {@code this}
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #biMatch(Consumer, Consumer)
@@ -401,7 +420,7 @@ public sealed interface Either<L, R> {
      * @param rightConsumer the consumer function to be executed
      */
     default void consume(@NotNull Consumer<? super R> rightConsumer) {
-        match(rightConsumer);
+        match( rightConsumer );
     }
 
 
@@ -461,6 +480,7 @@ public sealed interface Either<L, R> {
      * The next Either can have a different parameterized Right type.
      *
      * @param nextEither The {@link Either} to return.
+     * @param <R2> right value type, which may be different from the original type
      * @see #and(Supplier)
      * @see #or(Either)
      * @see #or(Supplier)
@@ -565,14 +585,13 @@ public sealed interface Either<L, R> {
      *              Either<String,Integer> myEitherBad = anExampleMethod(-37234);
      *              int badValue = myEitherGood.getOrThrow(ArithmeticException::new);
      *              // throws a new ArithmeticException("input too small")
-     *     }
-     *<p>
-     *     To create an exception that does <b>not</b> wrap:
+     *}
+     * <p>
+     * To create an exception that does <b>not</b> wrap:
      * {@snippet :
      *      getOrThrow((x) -> new IOException("My Exception"));
-     * }
-     *</p>
-     *
+     *}
+     * </p>
      *
      * @param exFn {@link Exception} producing {@link Function}
      * @param <X>  {@link Exception}
@@ -597,7 +616,6 @@ public sealed interface Either<L, R> {
      *
      * @return A new {@link Either} with left and right values swapped.
      */
-
     @NotNull Either<R, L> swap();
 
 
@@ -1124,10 +1142,10 @@ public sealed interface Either<L, R> {
             return coerce();
         }
 
-        @SuppressWarnings("unchecked")
         /**
          * {@inheritDoc}
          */
+        @SuppressWarnings("unchecked")
         @Override
         public <R2> @NotNull Either<L, R2> flatMap(@NotNull Function<? super R, ? extends Either<? extends L, ? extends R2>> rightMapper) {
             requireNonNull( rightMapper );

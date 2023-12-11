@@ -12,13 +12,16 @@ package net.xyzsd.dichotomy;
  */
 public final class Empty {
 
-    private static Empty INSTANCE = new Empty();
+    private static final Empty INSTANCE = new Empty();
 
     private Empty() {
     }
 
+    /**
+     * An instance of the Empty singleton.
+     * @return the Empty instance
+     */
     public static Empty getInstance() {
         return INSTANCE;
     }
 }
-// 'Empty' instead of None to differ from Maybe.None. 'Nil' could be a consideration. or maybe all caps to denote singleton ('NONE')

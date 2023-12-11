@@ -21,24 +21,9 @@ public interface ExFunction<T, R>  {
      *
      * @param t the function argument
      * @return the function result
+     * @throws Exception exception
      */
     @NotNull R apply(T t) throws Exception;
-
-
-    // we do not supply a generic parameter for Exception ... that potentially complicates
-    // things, particularly function composition and how attempt() works for exception types
-    // not included.
-    //
-    // exception types could be limited. either typetoken/type could be used, or the type could
-    // be specified.
-    //
-    // composing functions with exceptions would have to use typetokens to find a common supertype
-    // which at worst would be RuntimeException or (if there are any checked exceptions) Exception
-    // [in most cases, unless there was an unusual case of a custom Throwable].
-    //
-    // Alternatively... a synthetic exception could be created that wraps the given exceptions....
-    // with the wrapped exception as the cause (or as suppressed)
-
 
 
     /**
@@ -66,6 +51,7 @@ public interface ExFunction<T, R>  {
      * </p>
      *
      * @param after the operation to perform after this operation
+     * @param <V> output type of the after function and of the composed function
      * @return a composed {@code ExFunction} that performs this operation followed by the {@code after} operation.
      * @throws NullPointerException if {@code after} is null
      * @see #andThenEx(ExFunction)
@@ -104,6 +90,7 @@ public interface ExFunction<T, R>  {
      * </p>
      *
      * @param after the operation to perform after this operation
+     * @param <V> output type of the after function and of the composed function
      * @return a composed {@code ExFunction} that performs this operation followed by the {@code after} operation.
      * @throws NullPointerException if {@code after} is null
      * @see #andThen(Function) 

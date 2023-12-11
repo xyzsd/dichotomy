@@ -169,8 +169,6 @@ public sealed interface Result<V, E> {
     }
 
 
-
-
     /**
      * If this is an {@link OK}, return {@code true}.
      */
@@ -180,7 +178,6 @@ public sealed interface Result<V, E> {
      * If this is an {@link Err}, return {@code true}.
      */
     boolean isErr();
-
 
 
     /**
@@ -225,6 +222,8 @@ public sealed interface Result<V, E> {
      *
      * @param okMapper  the mapping function for {@link OK} values.
      * @param errMapper the mapping function for {@link Err} values.
+     * @param <E2>      type of the error,  which can be different from the original type
+     * @param <V2>      type of the value,  which can be different from the original type
      * @return the {@link Result} produced from {@code okMapper} or {@code errMapper}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #map(Function)
@@ -240,6 +239,8 @@ public sealed interface Result<V, E> {
      *
      * @param fnOK  the mapping function for {@link Err} values.
      * @param fnErr the mapping function for {@link OK} values.
+     * @param <E2>      type of the error,  which can be different from the original type
+     * @param <V2>      type of the value,  which can be different from the original type
      * @return the {@link Result} produced from {@code fnOK} or {@code fnErr}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #map(Function)
@@ -259,6 +260,7 @@ public sealed interface Result<V, E> {
      *
      * @param fnOK  the mapping function for {@link Err} values.
      * @param fnErr the mapping function for {@link OK} values.
+     * @param <T> returned type, which must be the same for both functions
      * @return the value produced from {@code fnOK} or {@code fnErr}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #recover(Function)
@@ -310,7 +312,7 @@ public sealed interface Result<V, E> {
      * @param okConsumer the consumer function to be executed
      */
     default void consume(@NotNull Consumer<? super V> okConsumer) {
-        match(okConsumer);
+        match( okConsumer );
     }
 
     /**
@@ -325,9 +327,10 @@ public sealed interface Result<V, E> {
      * </p>
      *
      * @param okMapper the mapping function producing a new {@link OK} value.
+     * @param <V2>     type of the value, which can be different from the original type
      * @return a new {@link OK} produced by the mapping function if this is {@link OK};
      * otherwise, returns an {@link Err}.
-     * @throws NullPointerException if the result of the mapping function is {@code null}
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
      * @see #mapErr(Function)
      * @see #biMap(Function, Function)
      */
@@ -345,9 +348,10 @@ public sealed interface Result<V, E> {
      * </p>
      *
      * @param okMapper the mapping function that produces a new {@link Result}
+     * @param <V2>     type of the value, which can be different from the original type
      * @return a new {@link OK} produced by the mapping function if this is {@link OK};
      * otherwise, returns an {@link Err}.
-     * @throws NullPointerException if the result of the mapping function is {@code null}
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
      * @see #biFlatMap(Function, Function)
      * @see #flatMapErr(Function)
      */
@@ -418,7 +422,8 @@ public sealed interface Result<V, E> {
      *
      * @param fnE2V {@link Function} that produces an {@link OK} value.
      * @return A {@link OK} value, either the current {@link OK} if present, or the produced {@link OK} if not.
-     * @throws NullPointerException if the result of the mapping function is {@code null}.
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
+     *                              .
      * @see #forfeit(Function)
      */
     @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V);
@@ -468,9 +473,10 @@ public sealed interface Result<V, E> {
      *}
      *
      * @param errMapper the mapping function producing a new {@link Err} value.
+     * @param <E2>      type of the error,  which can be different from the original type
      * @return a new {@link Err} produced by the mapping function if this is {@link Err};
      * otherwise, returns an {@link OK}.
-     * @throws NullPointerException if the result of the mapping function is {@code null}
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
      * @see #map(Function)
      * @see #biMap(Function, Function)
      */
@@ -488,9 +494,10 @@ public sealed interface Result<V, E> {
      * </p>
      *
      * @param errMapper the mapping function that produces a new {@link Result}
+     * @param <E2>      type of the error,  which can be different from the original type
      * @return a new {@link Err} produced by the mapping function if this is {@link Err};
      * otherwise, returns an {@link OK}.
-     * @throws NullPointerException if the result of the mapping function is {@code null}
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
      * @see #biFlatMap(Function, Function)
      * @see #flatMap(Function)
      */
@@ -560,7 +567,8 @@ public sealed interface Result<V, E> {
      *
      * @param fnV2E {@link Function} that produces an {@link Err} value.
      * @return A {@link Err} value, either the current {@link Err} if present, or the produced {@link Err} if not.
-     * @throws NullPointerException if the result of the mapping function is {@code null}.
+     * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
+     *                              .
      * @see #recover(Function)
      */
     @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E);
@@ -570,6 +578,7 @@ public sealed interface Result<V, E> {
      * The next {@link Result} can have a different parameterized {@link OK} type.
      *
      * @param nextResult The {@link Result} to return.
+     * @param <V2>       type of the value, which can be different from the original type
      * @see #and(Supplier)
      * @see #or(Result)
      * @see #or(Supplier)
@@ -582,6 +591,7 @@ public sealed interface Result<V, E> {
      * The next {@link Result} can have a different parameterized {@link OK} type.
      *
      * @param nextResultSupplier The supplier of a {@link Result} to return; only called if {@code this} is {@link OK}.
+     * @param <V2>               type of the value, which can be different from the original type
      * @throws NullPointerException if the supplied {@link Result} is {@code null}.
      * @see #and(Result)
      * @see #or(Result)
@@ -595,6 +605,8 @@ public sealed interface Result<V, E> {
      * The next {@link Result}  can have a different parameterized {@link Err} type.
      *
      * @param nextResult The {@link Result} to return.
+     * @param <E2>       type of the error,
+     *                   which can be different from the original type
      * @see #or(Supplier)
      * @see #and(Result)
      * @see #and(Supplier)
@@ -607,6 +619,8 @@ public sealed interface Result<V, E> {
      * The next {@link Result} can have a different parameterized {@link Err} type.
      *
      * @param nextResultSupplier The supplier of a {@link Result} to return; only called if {@code this} is {@link Err}.
+     * @param <E2>               type of the error,
+     *                           which can be different from the original type
      * @throws NullPointerException if the supplier is called and returns {@code null}.
      * @see #or(Result)
      * @see #and(Result)
@@ -1157,9 +1171,9 @@ public sealed interface Result<V, E> {
         @Override
         public @NotNull V expect() throws RuntimeException {
             // TODO: when pattern-switch is out of preview, convert this code
-            if(error instanceof RuntimeException e) {
+            if (error instanceof RuntimeException e) {
                 throw e;
-            } else if(error instanceof Throwable t) {
+            } else if (error instanceof Throwable t) {
                 throw new NoSuchElementException( t );
             } else {
                 throw new NoSuchElementException( String.valueOf( error ) );

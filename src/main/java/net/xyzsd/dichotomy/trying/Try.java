@@ -1,6 +1,7 @@
 package net.xyzsd.dichotomy.trying;
 
 import net.xyzsd.dichotomy.Empty;
+import net.xyzsd.dichotomy.Result;
 import net.xyzsd.dichotomy.trying.function.ExBiFunction;
 import net.xyzsd.dichotomy.trying.function.ExFunction;
 import net.xyzsd.dichotomy.trying.function.ExSupplier;
@@ -14,34 +15,85 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-// basic rules of thumb for methods:
-//  if we return a Try, we can capture exceptions.
-//  if we return a value (e.g., <V> or throwable), we cannot!
-// general rules of nulls
-//  nulls to arguments -> throws an exception (contract violated)
-//  nulls after function application -> CAUGHT if Try returned, but thrown if value returned
 
+/**
+ * {@code Try} is a specialized type of {@link Result} that handles code blocks that
+ * can potentially throw exceptions.
+ * <p>
+ * The exception is untyped.
+ * <p>
+ * Similar to Scala, several 'fatal' exceptions (and subclasses) are not handled and will always be thrown:
+ * <ul>
+ *      <li>{@link VirtualMachineError}s</li>
+ *      <li>{@link LinkageError}/li>
+ *      <li>{@link InterruptedException}</li>
+ * </ul>
+ * <p>
+ * In general, methods that return a {@code Try} will capture exceptions, and can return a failed {@code Try}
+ * ({@link Failure}. The basic rule is:
+ * <ul>
+ *     <li>If a method returns a Try, we can capture exceptions (and thus a {@link Failure} may be returned)</li>
+ *     <li>
+ *         If a method returns a value (e.g., {@link #ifPredicate(Predicate)} or {@link #recover(Function)},
+ *         exceptions will not be caught, and will be thrown.
+ *     </li>
+ * </ul>
+ *
+ * <p>
+ * If a null argument is supplied to a method (unless explicitly marked @Nullable), an exception (NPE) will be thrown.
+ * If a method which takes a Supplier or Function (or their checked equivalents, such as {@link ExSupplier} or
+ * {@link ExFunction} returns {@code null}, the {@code NullPointerException} will be caught and returned as a
+ * {@link Failure}.
+ *
+ *
+ *
+ * @param <V> the Try type, held by Success values.
+ */
 public sealed interface Try<V> permits Try.Failure, Try.Success {
 
-    /*
-
-        todo:
-            * TESTS
-            * docs
-
+    /**
+     * Create a Successful Try.
+     *
+     * @param value contained by the {@link Success}
+     * @return {@link Success} containing the above value
+     * @param <T> value type
      */
-
-
     static <T> Try<T> ofSuccess(@NotNull T value) {
         return Success.of( value );
     }
 
-    static <T, X extends Throwable> Try<T> ofFailure(@NotNull X failure) {
+    /**
+     * Create an unsuccessful Try (Failure).
+     *
+     * @param failure contained by the {@link Failure}
+     * @return {@link Failure} containing the above value
+     * @param <T> Success value type (always empty in this case).
+     */
+    static <T> Try<T> ofFailure(@NotNull Throwable failure) {
         return Failure.of( failure );
     }
 
 
-    // pass in a regular supplier via of(Supplier::get)
+    /**
+     * Invoke an {@link ExSupplier} to create a {@link Try}.
+     * <p>
+     *     If the {@link ExSupplier} is successful, a {@link Success} will be returned.
+     *     If an exception is thrown by the {@link ExSupplier}, a {@link Failure} will be returned.
+     * </p>
+     * <p>
+     *     {@link ExSupplier}s can throw checked or unchecked Exceptions.
+     *     To use a {@link Supplier} (which can only throw RuntimeExceptions), use as follows:
+     *     {@snippet :
+     *          Try<String> suppliedTry = Try.of( myStringSupplier::get );
+     *          // or alternatively:
+     *          Try<String> suppliedTry2 = Try.of( Try.from(myStringSupplier) );
+     * }
+     * </p>
+     *
+     * @param xSupplier a Supplier which could potentially throw an Exception.
+     * @return supplied type or exception wrapped in a Try
+     * @param <T> non-exceptional type
+     */
     static <T> Try<T> of(ExSupplier<T> xSupplier) {
         requireNonNull( xSupplier );
         try {
@@ -51,7 +103,28 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         }
     }
 
-    // also takes a regular function via passing in (in, fn::apply)
+    /**
+     * Invoke an {@link ExFunction} to create a {@link Try}.
+     * <p>
+     *     If the {@link ExFunction} is successful, a {@link Success} will be returned.
+     *     If an exception is thrown by the {@link ExFunction}, a {@link Failure} will be returned.
+     * </p>
+     * <p>
+     *     {@link ExFunction}s can throw checked or unchecked Exceptions.
+     *     To use a {@link Function} (which can only throw RuntimeExceptions), use as follows:
+     *     {@snippet :
+     *          Try<String> myFunctionResult = Try.of( myFunction::apply );
+     *          // or alternatively:
+     *          Try<String> myFunctionResult2 = Try.of( Try.from(myFunction) );
+     * }
+     * </p>
+     *
+     * @param in function input
+     * @param xFn a Function which could potentially throw an Exception.
+     * @return supplied type or exception wrapped in a Try
+     * @param <T> function input type
+     * @param <R> function return type
+     */
     static <T, R> Try<R> of(final T in, ExFunction<T, R> xFn) {
         requireNonNull( xFn );
         try {
@@ -61,6 +134,25 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         }
     }
 
+    /**
+     * Invoke an {@link ExBiFunction} to create a {@link Try}.
+     * <p>
+     *     If the {@link ExBiFunction} is successful, a {@link Success} will be returned.
+     *     If an exception is thrown by the {@link ExBiFunction}, a {@link Failure} will be returned.
+     * </p>
+     * <p>
+     *     {@link ExBiFunction}s can throw checked or unchecked Exceptions.
+
+     * </p>
+     *
+     * @param tIn function input
+     * @param uIn function input
+     * @param xBiFn a BiFunction which could potentially throw an Exception.
+     * @return supplied type or exception wrapped in a Try
+     * @param <T> function input type
+     * @param <U> function input type
+     * @param <R> function return type
+     */
     static <T, U, R> Try<R> of(final T tIn, final U uIn, ExBiFunction<T, U, R> xBiFn) {
         requireNonNull( xBiFn );
         try {
@@ -71,25 +163,69 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     }
 
 
-    // Supplier/ExSupplier to checked supplier, only invoked when used (lazy)
+    /**
+     * Convert a Supplier to an ExSupplier. The Supplier is only invoked when used.
+     *
+     * @param supplier Supplier
+     * @return ExSupplier
+     * @param <T> Supplier type parameter
+     */
     static <T> ExSupplier<Try<T>> from(Supplier<T> supplier) {
         requireNonNull( supplier );
         return () -> of( supplier::get );
     }
 
-    // same for functions (lazy)
-    static <T, R> ExFunction<T, Try<R>> from(Function<T, R> xFn) {
-        requireNonNull( xFn );
-        return (t) -> of( t, xFn::apply );
+    /**
+     * Convert a Function to an ExFunction. The Function is only invoked when used.
+     * @param fn Function to convert
+     * @return ExFunction
+     * @param <T> function input
+     * @param <R> function return type
+     */
+    static <T, R> ExFunction<T, Try<R>> from(Function<T, R> fn) {
+        requireNonNull( fn );
+        return (t) -> of( t, fn::apply );
     }
 
-    static <T, U, R> BiFunction<T, U, Try<R>> from(ExBiFunction<T, U, R> xBiFn) {
-        requireNonNull( xBiFn );
-        return (t, u) -> of( t, u, xBiFn );
+    /**
+     * Convert a BiFunction to an ExBiFunction. The BiFunction is only invoked when used.
+     * @param biFn BiFunction to convert
+     * @return ExBiFunction
+     * @param <T> first function input
+     * @param <U> second function input
+     * @param <R> function return type
+     */
+    static <T, U, R> ExBiFunction<T, U, Try<R>> from(BiFunction<T, U, R> biFn) {
+        requireNonNull( biFn );
+        return (t, u) -> of( t, u, biFn::apply );
     }
 
 
-    // 1 resource
+    /**
+     * Try-with-resources for a single AutoCloseable.
+     * <p>
+     *      The ExSupplier will supply the AutoCloseable resource.
+     *      The ExFunction will take the supplied resource and return a result.
+     *      The supplied resource will be automatically closed (as per try-with-resource semantics).
+     *      If no exceptions occur, the function result will be wrapped in a {@link Success}.
+     * </p>
+     * <p>
+     *     A {@link Failure} will be returned, containing an Exception when:
+     *     <ul>
+     *         <li>An Exception occurs in the supplier (if so, the function will not be invoked)</li>
+     *         <li>An Exception occurs in the function (if so, the resource will still be closed)</li>
+     *         <li>An Exception occurs when the resource is closed</li>
+     *     </ul>
+     *     If an Exception occurs in the function (but not the supplier) <b>and</b> during resource closing, the
+     *     resource-closing Exception will be added as a suppressed exception (unless disallowed) to the
+     *     Exception thrown during function execution.
+     *
+     * @param supplier AutoCloseable resource supplier
+     * @param fn ExFunction to process AutoCloseable resource
+     * @return ExFunction result wrapped in a Try
+     * @param <T> ExFunction result
+     * @param <AC> AutoCloseable resource and ExFunction input
+     */
     static <T, AC extends AutoCloseable> Try<T> withResources(ExSupplier<AC> supplier, ExFunction<AC, T> fn) {
         requireNonNull( supplier );
         requireNonNull( fn );
@@ -101,7 +237,19 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         }
     }
 
-    // 2 resources
+    /**
+     * Two-supplier, Two-parameter try-with-resources.
+     * See {@link #withResources(ExSupplier, ExFunction)}.
+     *
+     *
+     * @param supplier1 First AutoCloseable resource supplier
+     * @param supplier2 Second AutoCloseable resource supplier
+     * @param biFn function which can use both AutoCloseable resources supplied
+     * @return biFn result
+     * @param <T> biFunction result
+     * @param <AC1> First AutoCloseable resource and ExBiFunction input
+     * @param <AC2> Second AutoCloseable resource and ExBiFunction input
+     */
     static <T, AC1 extends AutoCloseable, AC2 extends AutoCloseable> Try<T> withResources(ExSupplier<AC1> supplier1,
                                                                                           ExSupplier<AC2> supplier2,
                                                                                           ExBiFunction<AC1, AC2, T> biFn) {
@@ -117,14 +265,16 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     }
 
 
-    @SuppressWarnings("unchecked")
-    private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
-        throw (E) e;
-    }
-
-
+    /**
+     * Determines if this is a Failure.
+     * @return {@code true} if this is a {@link Failure}.
+     */
     boolean isFailure();
 
+    /**
+     * Determines if this is a Success.
+     * @return {@code true} if this is a {@link Success}.
+     */
     boolean isSuccess();
 
 
@@ -136,14 +286,13 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      *
      * @param fnSuccess the mapping function for {@link Success} values.
      * @param fnFailure the mapping function for {@link Failure} values.
+     * @param <V2> returned type, which can be different than the original type
      * @return the {@link Try} produced from {@code fnSuccess} or {@code fnFailure}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #map(ExFunction)
      */
     @NotNull <V2> Try<V2> biFlatMap(@NotNull ExFunction<? super V, ? extends Try<? extends V2>> fnSuccess,
                                     @NotNull ExFunction<? super Throwable, ? extends Try<? extends V2>> fnFailure);
-
-
 
 
     /**
@@ -155,6 +304,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      *
      * @param fnSuccess the mapping function for {@link Failure} values.
      * @param fnFailure the mapping function for {@link Success} values.
+     * @param <T> returned type, which must be the same for both Failure and Success values.
      * @return the value produced from {@code fnSuccess} or {@code fnFailure}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #recover(Function)
@@ -166,6 +316,8 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     /**
      * Return a {@link Stream}, containing either a single {@link Success} value, or an empty {@link Stream}
      * if this is an {@link Failure} value.
+     *
+     * @return Stream
      */
     @NotNull Stream<V> stream();
 
@@ -181,7 +333,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * mapping function to the current {@link Try} ({@code this}).
      * </p>
      *
-     * @param predicate the predicate used to test {@link Success} values.
+     * @param predicate   the predicate used to test {@link Success} values.
      * @param fnUnmatched the mapping function for {@link Success} values that do not match the predicate.
      * @return a {@link Try} based on the algorithm described above.
      * @throws NullPointerException if the called mapping function returns {@code null}.
@@ -191,8 +343,9 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     /**
      * Executes the action iff this is an {@link Success} {@link Try}.
      *
-     * @return {@code this} if successful, otherwise returns a @link Failure} containing the exception.
-     * @throws NullPointerException if the called action returns {@code null}.
+     * @return {@code this} if successful, otherwise returns a {@link Failure} containing the Exception.
+     * @param successConsumer Consumer of Success values
+     * @throws NullPointerException if successConsumer is {@code null}.
      * @see #consume(Consumer)
      * @see #consumeErr(Consumer)
      */
@@ -204,6 +357,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * Unlike {@link #exec(Consumer)}, this method does <b>NOT</b> handle Exceptions.
      *
      * @param successConsumer the consumer function to be executed
+     * @throws NullPointerException if successConsumer is {@code null}.
      */
     void consume(@NotNull Consumer<? super V> successConsumer);
 
@@ -225,41 +379,94 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * {@link Success} values.
      * </p>
      * <p>
-     * This is equivalent to {@code map( Function.identity(), rightMapper )}.
+     * Any non-fatal exception thrown by the mapping function will be caught, and a {@link Failure} will be returned
+     * containing that Exception.
      * </p>
      *
      * @param fnSuccess the mapping function producing a new {@link Success} value.
-     * @return a new {@link Success} produced by the mapping function if this is {@link Success};
-     * otherwise, returns an {@link Failure}.
-     * @throws NullPointerException if the Try of the mapping function is {@code null}
+     * @param <V2> returned type, which can be different than the original type
+     * @return a new {@link Success} produced by the mapping function, if applied.
      */
     @NotNull <V2> Try<V2> map(@NotNull ExFunction<? super V, ? extends V2> fnSuccess);
 
+    /**
+     * If this is an {@link Failure}, return a new {@link Failure} value produced by the given mapping function.
+     * <p>
+     * Error mapping can only result in a {@link Failure}, but can result in a different type of failure.
+     * </p>
+     * <p>
+     * Any non-fatal Exception thrown by the mapping function will be caught, and a {@link Failure} will be returned
+     * containing that Exception.
+     * </p>
+     *
+     * @param fnFailure the mapping function producing a new {@link Failure} value.
+     * @return a new {@link Try} produced by the mapping function, if applied
+     */
     @NotNull Try<V> mapErr(@NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure);
 
+
+    /**
+     * Returns a new {@link Try}, the value of which is determined by the appropriate mapping function.
+     * <p>
+     * The returned {@link Try} (which may be {@link Success} or {@link Failure}) can have different types.
+     * </p>
+     * <p>
+     * Any non-fatal exception thrown by the executed mapping function will be caught, and a {@link Failure} will be returned
+     * containing that Exception.
+     * </p>
+     *
+     * @param fnSuccess the mapping function for {@link Success} values.
+     * @param fnFailure the mapping function for {@link Failure} values.
+     * @param <V2> returned type, which can be different than the original type
+     * @return the {@link Try} produced from {@code okMapper} or {@code errMapper}, or a {@link Failure} if an Exception is caught.
+     * @see #map(ExFunction)
+     * @see #mapErr(ExFunction)
+     */
     @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super V, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure);
 
 
-        /**
-         * If this is an {@link Success}, return the new {@link Try} supplied by the mapping function.
-         * Note that while the {@link Failure} type must remain the same, the {@link Success} type returned
-         * can be different.
-         * <p>
-         * This is also known as {@code join()} in other implementations.
-         * </p>
-         * <p>
-         * No mapping is performed if this is an {@link Failure}, and the mapping function is not invoked.
-         * </p>
-         *
-         * @param fnSuccess the mapping function that produces a new {@link Try}
-         * @return a new {@link Success} produced by the mapping function if this is {@link Success};
-         * otherwise, returns an {@link Failure}.
-         * @throws NullPointerException if the Try of the mapping function is {@code null}
-         * @see #biFlatMap(ExFunction, ExFunction)
-         */
+    /**
+     * If this is an {@link Success}, return the new {@link Try} supplied by the mapping function.
+     * Note that while the {@link Failure} type must remain the same, the {@link Success} type returned
+     * can be different.
+     * <p>
+     * This is also known as {@code join()} in other implementations.
+     * </p>
+     * <p>
+     * No mapping is performed if this is an {@link Failure}, and the mapping function is not invoked.
+     * </p>
+     * <p>
+     * Any non-fatal exception thrown by the mapping function will be caught, and a {@link Failure} will be returned.
+     * </p>
+     *
+     * @param fnSuccess the mapping function that produces a new {@link Try}
+     * @param <V2> returned type, which can be different than the original type
+     * @return a new {@link Try} produced by the mapping function, if applied
+     * @see #flatMapErr(ExFunction)
+     * @see #biFlatMap(ExFunction, ExFunction)
+     */
     @NotNull <V2> Try<V2> flatMap(@NotNull ExFunction<? super V, ? extends Try<? extends V2>> fnSuccess);
 
 
+    /**
+     * If this is an {@link Failure}, return the new {@link Try} supplied by the mapping function.
+     * Note that the {@link Success} type must remain the same.
+     * <p>
+     * This is also known as {@code join()} in other implementations.
+     * </p>
+     * <p>
+     * No mapping is performed if this is an {@link Success}, and the mapping function is not invoked.
+     * </p>
+     * <p>
+     * Any non-fatal exception thrown by the mapping function will be caught, and a {@link Failure} will be returned.
+     * </p>
+     *
+     * @param fnFailure the mapping function that produces a new {@link Try}
+     * @return a new {@link Try} produced by the mapping function, if applied
+     * otherwise, returns an {@link Failure}.
+     * @see #flatMapErr(ExFunction)
+     * @see #biFlatMap(ExFunction, ExFunction)
+     */
     @NotNull Try<V> flatMapErr(@NotNull ExFunction<? super Throwable, ? extends Try<? extends V>> fnFailure);
 
 
@@ -344,14 +551,33 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
 
 
     /**
+     * Returns a value or throws a {@link NoSuchElementException}.
      *
      * @return V
-     * @throws NoSuchElementException if this is a {@Link Failure}, wrapping the Throwable.
+     * @throws NoSuchElementException if this is a {@link Failure}, with the contained Throwable set as its cause.
      */
     @NotNull V expect() throws NoSuchElementException;
 
+    /**
+     * Returns a value, or throw the given Throwable.
+     * <p>
+     * This method can wrap a throwable easily if the desired Exception can be created
+     * with a Throwable as a cause:
+     * {@snippet :
+     *      getOrThrow(IOException::new);   // equivalent to new IOException(Throwable)
+     *}
+     * If setting the throwable as a cause is desirable, this form could be used:
+     * {@snippet :
+     *      getOrThrow( (x) -> new IOException("This is my exception message"));
+     *}
+     * </p>
+     *
+     * @param exFn Exception (Throwable) mapping function
+     * @param <X>  Exception to throw; if not a (subclass of) RuntimeException, it must be rethrown or caught
+     * @return V
+     * @throws X Exception to throw
+     */
     <X extends Exception> @NotNull V getOrThrow(@NotNull Function<? super Throwable, X> exFn) throws X;
-
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -359,7 +585,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static <IN, OUT> Try<OUT> mapChecked(IN in, ExFunction<? super IN, ? extends OUT> fn) {
         try {
-            return Success.of(  fn.apply( in ) );
+            return Success.of( fn.apply( in ) );
         } catch (Throwable t) {
             return Failure.of( t );
         }
@@ -368,28 +594,53 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     @SuppressWarnings("unchecked")
     private static <IN, OUT> Try<OUT> flatMapChecked(IN in, ExFunction<? super IN, ? extends Try<? extends OUT>> fn) {
         try {
-            return (Try<OUT>)  requireNonNull( fn.apply( in ) );
+            return (Try<OUT>) requireNonNull( fn.apply( in ) );
         } catch (Throwable t) {
             return Failure.of( t );
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
+        throw (E) e;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Implementation
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    /**
+     * A Successful Try.
+     *
+     * @param value Successful value
+     * @param <T> value type parameter
+     */
     record Success<T>(@NotNull T value) implements Try<T> {
+        /**
+         * A Successful Try.
+         * @param value successful value.
+         */
         public Success {
             Objects.requireNonNull( value );
         }
 
+        /**
+         * Create a Successful empty Try.
+         * @return Successful Try with the {@link Empty} type.
+         */
         public static Success<Empty> of() {
             return new Success<>( Empty.getInstance() );
 
         }
 
-        public static <U> Success<U> of(final U value) {
+        /**
+         * Create a Successful Try.
+         * @param value successful value.
+         * @param <U> type of value
+         * @return Success containing the given value
+         */
+        public static <U> Success<U> of(@NotNull final U value) {
             return new Success<>( value );
 
         }
@@ -477,7 +728,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         @Override
         public @NotNull <V2> Try<V2> map(@NotNull ExFunction<? super T, ? extends V2> fnSuccess) {
             requireNonNull( fnSuccess );
-            return mapChecked(value, fnSuccess);
+            return mapChecked( value, fnSuccess );
         }
 
         @Override
@@ -548,15 +799,30 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     }
 
 
-
+    /**
+     * A Failed Try, which holds a single Throwable.
+     *
+     * @param err error value
+     * @param <T> success value type (success value is always empty for Failures)
+     */
     record Failure<T>(@NotNull Throwable err) implements Try<T> {
 
+        /**
+         * An Unsuccessful Try. This will never permit 'fatal' exceptions (see documentation for {@link Try}).
+         * @param err Throwable
+         */
         public Failure {
             Objects.requireNonNull( err );
             throwIfFatal( err );
         }
 
-        public static <U> Failure<U> of(Throwable t) {
+        /**
+         * Create an Unsuccessful Try. This will never permit 'fatal' exceptions (see documentation for {@link Try}).
+         * @param t error value
+         * @return {@code Try.Failure} containing the error value.
+         * @param <U> Success value type (always empty)
+         */
+        public static <U> Failure<U> of(@NotNull Throwable t) {
             return new Failure<>( t );
         }
 
@@ -583,7 +849,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         public @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super T, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
             Objects.requireNonNull( fnSuccess );
             Objects.requireNonNull( fnFailure );
-            return failMap(fnFailure);
+            return failMap( fnFailure );
         }
 
         // Failures can only be mapped to failures if the fail, and if the failure mapping fails,
@@ -696,7 +962,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
 
         @Override
         public @NotNull T expect() throws NoSuchElementException {
-            throw new NoSuchElementException(err);
+            throw new NoSuchElementException( err );
         }
 
         @Override
@@ -704,7 +970,6 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
             requireNonNull( exFn );
             throw requireNonNull( exFn.apply( err ) );
         }
-
 
 
         @SuppressWarnings("unchecked")

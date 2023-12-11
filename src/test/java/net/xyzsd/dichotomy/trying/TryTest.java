@@ -353,9 +353,6 @@ class TryTest {
     void forfeit() {
     }
 
-    @Test
-    void testBiFlatMap() {
-    }
 
     @Test
     void consumeErr() {
@@ -380,7 +377,7 @@ class TryTest {
 
     @Test
     void getOrThrow() {
-
+ //       TRY_FAILURE.getOrThrow( (x) -> new RuntimeException("sdf") );
 
     }
 

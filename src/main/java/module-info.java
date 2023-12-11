@@ -1,12 +1,13 @@
 /**
  * Module declaration for the net.xyzsd.dichotomy module.
  * This module exports three packages:
- * - net.xyzsd.dichotomy.trying.function
- * - net.xyzsd.dichotomy
- * - net.xyzsd.dichotomy.trying
+ * <ul>
+ * <li>>net.xyzsd.dichotomy.trying.function</li>
+ * <li>net.xyzsd.dichotomy</li>
+ * <li>net.xyzsd.dichotomy.trying</li>
+ * </ul>
  *
  * This module requires the org.jetbrains.annotations module in a static manner.
- *
  *
  */
 module net.xyzsd.dichotomy {

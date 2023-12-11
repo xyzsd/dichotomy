@@ -5,13 +5,11 @@ import net.xyzsd.dichotomy.Result;
 import net.xyzsd.dichotomy.trying.Try;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-
 
 /**
  * Conversion utilities.
  * <p>
- * Convert {@link Either}s to and from {@link Result}s or {@link Try}s.
+ * Convert {@link Either}s, {@link Result}s, or {@link Try}s to another monadic type.
  */
 public interface Conversion {
 

@@ -2,7 +2,6 @@ package net.xyzsd.dichotomy.trying.function;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Supplier;
 
 /**
  * Represents a Supplier that can throw an exception.
