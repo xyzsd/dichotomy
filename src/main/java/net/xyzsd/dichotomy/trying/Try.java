@@ -566,11 +566,14 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * {@snippet :
      *      getOrThrow(IOException::new);   // equivalent to new IOException(Throwable)
      *}
+     * If the exception is a checked exception, it must be caught or
+     * declared within a methods {@code throws} clause.
+     * <p>
      * If setting the throwable as a cause is desirable, this form could be used:
      * {@snippet :
      *      getOrThrow( (x) -> new IOException("This is my exception message"));
      *}
-     * </p>
+     *
      *
      * @param exFn Exception (Throwable) mapping function
      * @param <X>  Exception to throw; if not a (subclass of) RuntimeException, it must be rethrown or caught

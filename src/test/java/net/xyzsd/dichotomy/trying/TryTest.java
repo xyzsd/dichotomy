@@ -1,5 +1,6 @@
 package net.xyzsd.dichotomy.trying;
 
+import net.xyzsd.dichotomy.TestUtils.SingleUseConsumer;
 import net.xyzsd.dichotomy.trying.function.ExFunction;
 import net.xyzsd.dichotomy.trying.function.ExSupplier;
 import org.junit.jupiter.api.Test;
@@ -7,13 +8,17 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
+import static net.xyzsd.dichotomy.TestUtils.neverConsumer;
 import static net.xyzsd.dichotomy.TestUtils.neverFunction;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class TryTest {
 
@@ -167,15 +172,15 @@ class TryTest {
     }
 
     @Test
-    void from() {
+    void fromSupplier() {
     }
 
     @Test
-    void testFrom() {
+    void fromFunction() {
     }
 
     @Test
-    void testFrom1() {
+    void fromBiFunction() {
     }
 
     @Test
@@ -267,7 +272,8 @@ class TryTest {
 
     @Test
     void stream() {
-
+        assertEquals( 1, TRY_SUCCESS.stream().count() );
+        assertEquals( 0, TRY_FAILURE.stream().count() );
     }
 
     @Test
@@ -276,10 +282,31 @@ class TryTest {
 
     @Test
     void exec() {
+
     }
 
     @Test
     void consume() {
+        assertThrows( NullPointerException.class, () -> TRY_SUCCESS.consume( null ));
+        assertThrows( NullPointerException.class, () -> TRY_FAILURE.consume( null ));
+        assertThrows( LinkageError.class, () -> TRY_SUCCESS.consume( neverConsumer() ) );
+        assertDoesNotThrow(  () -> TRY_FAILURE.consume( neverConsumer() ) );
+        //
+        SingleUseConsumer<String> consumer = new SingleUseConsumer<>();
+        TRY_SUCCESS.consume(consumer);
+        assertTrue( consumer.usedJustOnce() );
+    }
+
+    @Test
+    void consumeErr() {
+        assertThrows( NullPointerException.class, () -> TRY_SUCCESS.consumeErr( null ));
+        assertThrows( NullPointerException.class, () -> TRY_FAILURE.consumeErr( null ));
+        assertDoesNotThrow(  () -> TRY_SUCCESS.consumeErr( neverConsumer() ) );
+        assertThrows( LinkageError.class, () -> TRY_FAILURE.consumeErr( neverConsumer() ) );
+        //
+        SingleUseConsumer<Throwable> consumer = new SingleUseConsumer<>();
+        TRY_FAILURE.consumeErr(consumer);
+        assertTrue( consumer.usedJustOnce() );
     }
 
     @Test
@@ -327,6 +354,12 @@ class TryTest {
 
     @Test
     void ifPredicate() {
+        final Predicate<String> predicateS = x -> x.startsWith( "S" );
+        assertTrue( TRY_SUCCESS.ifPredicate( predicateS ) );
+        assertFalse( TRY_SUCCESS.ifPredicate( predicateS.negate() ) );
+        //
+        assertFalse( TRY_FAILURE.ifPredicate( predicateS ) );
+        assertFalse( TRY_FAILURE.ifPredicate( predicateS.negate() ) );
     }
 
     @Test
@@ -334,6 +367,9 @@ class TryTest {
         assertTrue( Try.Success.of( SUPPLIED_STRING ).contains( "SuppliedString" ) );
         assertFalse( Try.Success.of( SUPPLIED_STRING ).contains( "randomstring#*@(#$" ) );
         assertFalse( Try.Failure.of( IOE ).contains( "SuppliedString" ) );
+        // null : allowed but always false.
+        assertFalse( TRY_SUCCESS.contains( null ) );
+        assertFalse( TRY_FAILURE.contains( null ) );
     }
 
     @Test
@@ -346,17 +382,36 @@ class TryTest {
 
     @Test
     void recover() {
+        assertThrows( NullPointerException.class,
+                () -> TRY_SUCCESS.recover( null ));
+        assertThrows( NullPointerException.class,
+                () -> TRY_FAILURE.recover( null ));
+        assertDoesNotThrow( () -> TRY_SUCCESS.recover( (x) -> null )); // because fn not used
+        assertThrows( NullPointerException.class,
+                () -> TRY_FAILURE.recover( (x) -> null ));
+        //
+        final Function<Throwable,String> e2v = Throwable::getMessage;
+        assertEquals( MSG_FAIL, TRY_FAILURE.recover( e2v ) );
+        assertEquals( MSG_SUCCESS, TRY_SUCCESS.recover( e2v ) );
     }
 
 
     @Test
     void forfeit() {
+        assertThrows( NullPointerException.class,
+                () -> TRY_SUCCESS.forfeit( null ) );
+        assertThrows( NullPointerException.class,
+                () -> TRY_FAILURE.forfeit( null ) );
+        assertThrows( NullPointerException.class,
+                () -> TRY_SUCCESS.forfeit( (x) -> null ) );
+        assertDoesNotThrow( () -> TRY_FAILURE.forfeit( (x) -> null ) ); // because fn not used
+        //
+        final Function<String,Throwable> e2v = ArithmeticException::new;
+        assertEquals( MSG_FAIL, TRY_FAILURE.forfeit( e2v ).getMessage() );
+        assertEquals( MSG_SUCCESS, TRY_SUCCESS.forfeit( e2v ).getMessage() );
     }
 
 
-    @Test
-    void consumeErr() {
-    }
 
     @Test
     void mapErr() {
@@ -372,12 +427,52 @@ class TryTest {
 
     @Test
     void expect() {
-
+        assertDoesNotThrow( TRY_SUCCESS::expect );
+        assertEquals( MSG_SUCCESS, TRY_SUCCESS.expect() );
+        //
+        assertThrows( NoSuchElementException.class, () -> TRY_FAILURE.expect() );
+        try {
+            TRY_FAILURE.expect();
+        } catch(NoSuchElementException e) {
+            // ensure we set the Throwable as a cause for the created NoSuchElementException
+            assertNotNull( e.getCause() );
+            assertEquals( MSG_FAIL, e.getCause().getMessage() );
+        }
     }
 
     @Test
     void getOrThrow() {
- //       TRY_FAILURE.getOrThrow( (x) -> new RuntimeException("sdf") );
+        // null input
+        assertThrows( NullPointerException.class, () -> TRY_SUCCESS.getOrThrow( null ) );
+        assertThrows( NullPointerException.class, () -> TRY_FAILURE.getOrThrow( null ) );
+        assertThrows( NullPointerException.class,
+                () -> TRY_FAILURE.getOrThrow( (x) -> null ) );
+        //
+        //
+        assertDoesNotThrow( () -> TRY_SUCCESS.getOrThrow( neverFunction()) );
+        // if we use an IOException::new here, we would have to wrap it in a try-catch.
+        assertEquals( MSG_SUCCESS, TRY_SUCCESS.getOrThrow( RuntimeException::new  ));
+        //
+        //
+        assertThrows( IOException.class, () -> TRY_FAILURE.getOrThrow( IOException::new ) );
+        try {
+            // this form will use the IOException(Throwable) constructor
+            TRY_FAILURE.getOrThrow( IOException::new );
+        } catch (IOException e) {
+            // ensure we are applying function correctly
+            assertNotNull( e.getCause() );
+            assertEquals( MSG_FAIL, e.getCause().getMessage() );
+        }
+
+        try {
+            // this form will use the IOException(String) constructor; more like a supplier
+            // (function input argument is ignored)
+            TRY_FAILURE.getOrThrow( __ -> new IOException("Here be Exceptions") );
+        } catch (IOException e) {
+            // ensure we are applying function correctly
+            assertNull( e.getCause() );
+            assertEquals( "Here be Exceptions", e.getMessage() );
+        }
 
     }
 
