@@ -875,7 +875,6 @@ public sealed interface Either<L, R> {
         /**
          * {@inheritDoc}
          */
-        @SuppressWarnings("unchecked")
         @Override
         public @NotNull <L2> Either<L2, R> mapLeft(@NotNull Function<? super L, ? extends L2> leftMapper) {
             requireNonNull( leftMapper );
@@ -1308,7 +1307,7 @@ public sealed interface Either<L, R> {
          */
         @Override
         @NotNull
-        public <X extends Throwable> R expect(@NotNull Supplier<X> supplier) throws X {
+        public <X extends Throwable> R expect(@NotNull Supplier<X> supplier)  {
             // supplier not invoked
             requireNonNull( supplier );
             return value;

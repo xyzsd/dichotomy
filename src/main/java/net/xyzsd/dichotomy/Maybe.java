@@ -381,7 +381,7 @@ public sealed interface Maybe<T> {
         }
 
         @Override
-        public <X extends Throwable> @NotNull T getOrThrow(@NotNull Supplier<X> supplier) throws X {
+        public <X extends Throwable> @NotNull T getOrThrow(@NotNull Supplier<X> supplier)  {
             return value;
         }
     }
