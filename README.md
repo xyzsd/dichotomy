@@ -1,13 +1,17 @@
 [![Java CI with Gradle](https://github.com/xyzsd/dichotomy/actions/workflows/gradle.yml/badge.svg)](https://github.com/xyzsd/dichotomy/actions/workflows/gradle.yml)
 
 # dichotomy
-Either and Result monadic types for Java
+Either and Result monadic types for Java.
+Includes specialized types Try and Maybe.
 
-## UPDATE:
-    * Substantially restructed for the pending 1.0 version
-    * 'Try' type is currently being refactored and changed. 
-    * Improved documentation and examples
-    * Improved test
+All types are sealed, and can be used in switch statements and
+pattern matching.
+
+## UPDATE (18-Dec-2023):
+    * Substantially restructured and improved for the pending 1.0 version
+    * Markedly improved Try type, added Maybe type
+    * Tests near-complete
+    * Improved documentation
     * still needs: a nice intro (with synopsis and illustrative examples)
 
 
