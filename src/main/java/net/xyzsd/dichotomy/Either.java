@@ -79,11 +79,13 @@ public sealed interface Either<L, R> {
 
     /**
      * Returns {@code true} is this is a {@link Left} {@link Either}.
+     * @return true if this is a Left Either.
      */
     boolean isLeft();
 
     /**
      * Returns {@code true} is this is a {@link Right} {@link Either}.
+     * @return true if this is a Right Either.
      */
     boolean isRight();
 
@@ -91,12 +93,14 @@ public sealed interface Either<L, R> {
     /**
      * If the {@link Either} is {@link Left}, return the value as an {@link Optional}.
      * Otherwise, return an empty {@link Optional}.
+     * @return Left value or Optional.Empty if this is Right
      */
     @NotNull Optional<L> left();
 
     /**
      * If the {@link Either} is {@link Right}, return the value as an {@link Optional}.
      * Otherwise, return an empty {@link Optional}.
+     * @return Right value or Optional.Empty if this is Left
      */
     @NotNull Optional<R> right();
 
@@ -245,6 +249,7 @@ public sealed interface Either<L, R> {
      * if this is a {@link Right value}.
      *
      * @see #stream()
+     * @return Stream
      */
     @NotNull Stream<L> streamLeft();
 
@@ -484,6 +489,7 @@ public sealed interface Either<L, R> {
      * @see #and(Supplier)
      * @see #or(Either)
      * @see #or(Supplier)
+     * @return this or nextEither
      */
     @NotNull <R2> Either<L, R2> and(@NotNull Either<L, R2> nextEither);
 
@@ -498,6 +504,7 @@ public sealed interface Either<L, R> {
      * @see #and(Either)
      * @see #or(Either)
      * @see #or(Supplier)
+     * @return this or nextEither
      */
     @NotNull <R2> Either<L, R2> and(@NotNull Supplier<Either<L, R2>> nextEitherSupplier);
 
@@ -512,6 +519,7 @@ public sealed interface Either<L, R> {
      * @see #or(Supplier)
      * @see #and(Either)
      * @see #and(Supplier)
+     * @return this or nextEither
      */
     @NotNull <L2> Either<L2, R> or(@NotNull Either<L2, R> nextEither);
 
@@ -527,6 +535,7 @@ public sealed interface Either<L, R> {
      * @see #or(Either)
      * @see #and(Either)
      * @see #and(Supplier)
+     * @return this or nextEither
      */
     @NotNull <L2> Either<L2, R> or(@NotNull Supplier<Either<L2, R>> nextEitherSupplier);
 
@@ -639,6 +648,7 @@ public sealed interface Either<L, R> {
 
         /**
          * Get the value. Never null.
+         * @return value
          */
         @NotNull
         public L get() {return value;}
@@ -991,6 +1001,7 @@ public sealed interface Either<L, R> {
 
         /**
          * Get the value. Never null.
+         * @return value
          */
         @NotNull
         public R get() {return value;}

@@ -118,7 +118,8 @@ public sealed interface Result<V, E> {
      *         }
      *     </pre>
      *
-     * @param <V> Value, which may be null
+     * @param <V> Value type
+     * @param value given value, which may be null
      * @return A result containing {@code OK<None>} or {@code Err<E>}.
      */
     @NotNull
@@ -137,15 +138,14 @@ public sealed interface Result<V, E> {
      * <p>
      *     If the opposite behavior is desired ({@code null} is successful, and
      *     non-{@code null} values are failure) use {@link #swap()}, as follows:
-     *     <pre>
-     *         {@code
+     *     {@snippet :
      *              // Lets say RuntimeException is the error type
      *              Optional<RuntimeException> myValue = someFunction();
      *              Result<None, RuntimeException> result = Result.ofOK(myValue).swap();
-     *         }
-     *     </pre>
+     *     }
      *
      * @param <V> Value type
+     * @param opt the Optional from which we create the Result
      * @return A result containing {@code OK<V>} or {@code Err<None>}.
      * @see #ofNullable(Object)
      */
@@ -171,11 +171,13 @@ public sealed interface Result<V, E> {
 
     /**
      * If this is an {@link OK}, return {@code true}.
+     * @return true if this is an OK result.
      */
     boolean isOK();
 
     /**
      * If this is an {@link Err}, return {@code true}.
+     * @return true if this is an error result.
      */
     boolean isErr();
 
@@ -211,6 +213,8 @@ public sealed interface Result<V, E> {
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #matchErr(Consumer)
+     * @param okConsumer Consumer of OK values
+     * @param errConsumer Consumer of Err values
      */
     @NotNull Result<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer);
 
@@ -273,6 +277,7 @@ public sealed interface Result<V, E> {
      * if this is an {@link Err} value.
      *
      * @see #streamErr()
+     * @return Stream
      */
     @NotNull Stream<V> stream();
 
@@ -302,7 +307,8 @@ public sealed interface Result<V, E> {
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #biMatch(Consumer, Consumer)
-     */
+     * @param okConsumer Consumer of OK values
+     * */
     @NotNull Result<V, E> match(@NotNull Consumer<? super V> okConsumer);
 
 
@@ -433,6 +439,7 @@ public sealed interface Result<V, E> {
      * if this is an {@link OK} value.
      *
      * @see #stream()
+     * @return Stream
      */
     @NotNull Stream<E> streamErr();
 
@@ -443,6 +450,7 @@ public sealed interface Result<V, E> {
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #biMatch(Consumer, Consumer)
+     * @param errConsumer Consumer of Err values
      */
     @NotNull Result<V, E> matchErr(@NotNull Consumer<? super E> errConsumer);
 
@@ -582,6 +590,7 @@ public sealed interface Result<V, E> {
      * @see #and(Supplier)
      * @see #or(Result)
      * @see #or(Supplier)
+     * @return this or the given Result
      */
     @NotNull <V2> Result<V2, E> and(@NotNull Result<V2, E> nextResult);
 
@@ -596,6 +605,7 @@ public sealed interface Result<V, E> {
      * @see #and(Result)
      * @see #or(Result)
      * @see #or(Supplier)
+     * @return this or the supplied Result
      */
     @NotNull <V2> Result<V2, E> and(@NotNull Supplier<Result<V2, E>> nextResultSupplier);
 
@@ -610,6 +620,7 @@ public sealed interface Result<V, E> {
      * @see #or(Supplier)
      * @see #and(Result)
      * @see #and(Supplier)
+     * @return this or the given Result
      */
     @NotNull <E2> Result<V, E2> or(@NotNull Result<V, E2> nextResult);
 
@@ -625,6 +636,7 @@ public sealed interface Result<V, E> {
      * @see #or(Result)
      * @see #and(Result)
      * @see #and(Supplier)
+     * @return this or the supplied Result
      */
     @NotNull <E2> Result<V, E2> or(@NotNull Supplier<Result<V, E2>> nextResultSupplier);
 

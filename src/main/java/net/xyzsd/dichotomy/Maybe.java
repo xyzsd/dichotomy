@@ -180,7 +180,7 @@ public sealed interface Maybe<T> {
      * If this is a {@link Some}, return it. Otherwise, use the provided alternate value.
      *
      * @param alternate used if this is {@link None}
-     * @return value
+     * @return this or the given Maybe
      */
     @NotNull T orElse(@NotNull T alternate);
 
@@ -189,7 +189,7 @@ public sealed interface Maybe<T> {
      * The Supplier is only invoked if this is a {@link None}.
      *
      * @param supplier, used if this is {@link None}
-     * @return value
+     * @return this or the supplied Maybe
      */
     @NotNull T orElse(@NotNull Supplier<? extends T> supplier);
 
@@ -199,6 +199,7 @@ public sealed interface Maybe<T> {
      *
      * @param nextMaybe if this is not a {@link None}
      * @param <U>       type of Maybe returned
+     * @return this or the given Maybe
      */
     <U> @NotNull Maybe<U> and(@NotNull Maybe<? extends U> nextMaybe);
 
@@ -208,20 +209,23 @@ public sealed interface Maybe<T> {
      *
      * @param nextMaybeSupplier invoked this is not a {@link None}
      * @param <U>               type of Maybe returned
+     * @return this or the supplied Maybe
      */
     <U> @NotNull Maybe<U> and(@NotNull Supplier<Maybe<? extends U>> nextMaybeSupplier);
 
     /**
      * If this is a {@link Some}, return it. Otherwise, return {@code nextMaybe}.
      *
-     * @param nextMaybe (returned if this is a {@link None}
+     * @param nextMaybe the next Maybe
+     * @return nextMaybe (returned if this is a {@link None}
      */
     @NotNull Maybe<T> or(@NotNull Maybe<T> nextMaybe);
 
     /**
      * If this is a {@link Some}, return it. Otherwise, return the maybe via the provided {@link Supplier}.
      *
-     * @param nextMaybeSupplier (invoked if this is a {@link None}
+     * @param nextMaybeSupplier supplier of the next Maybe
+     * @return  nextMaybeSupplier (invoked if this is a {@link None}
      */
     @NotNull Maybe<T> or(@NotNull Supplier<Maybe<T>> nextMaybeSupplier);
 
@@ -237,6 +241,9 @@ public sealed interface Maybe<T> {
      * Get the value, if this is a {@link Some}; otherwise, throw an exception via the provided {@link Supplier}.
      *
      * @return value
+     * @param <X>  Exception to throw; if not a (subclass of) RuntimeException, it must be rethrown or caught
+     * @param supplier Supplier of exceptions to throw
+     * @throws X Exception to throw
      */
     @NotNull <X extends Throwable> T getOrThrow(@NotNull Supplier<X> supplier) throws X;
 
