@@ -1,7 +1,7 @@
 package net.xyzsd.dichotomy;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import net.xyzsd.dichotomy.trying.function.ExFunction;
+
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -12,13 +12,17 @@ public interface TestUtils {
     // A supplier that should NOT be invoked
     // For simplicity, we throw a fatal nonchecked Error, rather than the preferred IllegalStateException.
     // This way we can check that these are thrown when testing a Try.
-    Supplier<Object> NEVERSUPPLIER = () -> {
+    Supplier<?> NEVERSUPPLIER = () -> {
         throw new LinkageError( "NEVERSUPPLIER::get invoked!" );
     };
 
     // A function that should NOT be invoked
-    Function<Object, Object> NEVERFUNCTION = (x) -> {
+    Function<?, ?> NEVERFUNCTION = (x) -> {
         throw new LinkageError( "NEVERFUNCTION::apply invoked!" );
+    };
+
+    ExFunction<?, ?> EX_NEVERFUNCTION = (x) -> {
+        throw new LinkageError( "EX_NEVERFUNCTION::apply invoked!" );
     };
 
     // a runner that should NOT be invoked
@@ -27,7 +31,7 @@ public interface TestUtils {
     };
 
     // a consumer that should NOT be invoked
-    Consumer<Object> NEVERCONSUMER = (x) -> {
+    Consumer<?> NEVERCONSUMER = (x) -> {
         throw new LinkageError( "NEVERCONSUMER was invoked!" );
     };
 
@@ -47,6 +51,20 @@ public interface TestUtils {
     static <T> Consumer<T> neverConsumer() {
         return (Consumer<T>) NEVERCONSUMER;
     }
+
+    @SuppressWarnings("unchecked")
+    static <T extends Throwable, U extends Throwable> Function<T, U> neverFunctionT() {
+        return (Function<T, U>)   NEVERFUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T,U> ExFunction<T, U> neverExFunction() {
+        return (ExFunction<T, U>) EX_NEVERFUNCTION;
+    }
+
+
+
+
 
 
     // A Consumer that keeps track of the amount of times accept() was called.

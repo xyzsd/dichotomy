@@ -1,7 +1,6 @@
 package net.xyzsd.dichotomy.trying.function;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
@@ -21,24 +20,18 @@ public interface ExConsumer<T> {
      * @param t input
      * @throws Exception exception
      */
-    void accept(@Nullable T t) throws Exception;
-
+    void accept(T t) throws Throwable;
 
     /**
-     * Returns a composed {@code ExConsumer} that performs, in sequence, this
-     * operation followed by the {@code after} operation.
-     * <p>
-     *     Note that the {@code after} operation will not be performed if the
-     *     first operation throws an exception.
-     * </p>
+     * Convert a Consumer to an ExConsumer. The Consumer is only invoked when used.
      *
-     * @param after the operation to perform after this operation
-     * @return a composed {@code ExConsumer} that performs this operation followed by the {@code after} operation.
-     * @throws NullPointerException if {@code after} is null
+     * @param consumer the Consumer
+     * @return ExConsumer
+     * @param <IN> Consumer input type parameter
      */
-    default ExConsumer<T> andThen(@NotNull Consumer<? super T> after) {
-        requireNonNull(after);
-        return (T t) -> { after.accept(t); this.accept(t); };
+    @NotNull static <IN> ExConsumer<IN> from(@NotNull final Consumer<IN> consumer) {
+        requireNonNull( consumer );
+        return consumer::accept;
     }
 
 

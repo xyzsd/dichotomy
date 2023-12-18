@@ -3,6 +3,7 @@ package net.xyzsd.dichotomy.trying;
 import net.xyzsd.dichotomy.Empty;
 import net.xyzsd.dichotomy.Result;
 import net.xyzsd.dichotomy.trying.function.ExBiFunction;
+import net.xyzsd.dichotomy.trying.function.ExConsumer;
 import net.xyzsd.dichotomy.trying.function.ExFunction;
 import net.xyzsd.dichotomy.trying.function.ExSupplier;
 import org.jetbrains.annotations.NotNull;
@@ -58,6 +59,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * @return {@link Success} containing the above value
      * @param <T> value type
      */
+    @NotNull
     static <T> Try<T> ofSuccess(@NotNull T value) {
         return Success.of( value );
     }
@@ -69,11 +71,13 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * @return {@link Failure} containing the above value
      * @param <T> Success value type (always empty in this case).
      */
+    @NotNull
     static <T> Try<T> ofFailure(@NotNull Throwable failure) {
         return Failure.of( failure );
     }
 
 
+    // todo: show an example just wrapping a block of code.
     /**
      * Invoke an {@link ExSupplier} to create a {@link Try}.
      * <p>
@@ -86,118 +90,28 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      *     {@snippet :
      *          Try<String> suppliedTry = Try.of( myStringSupplier::get );
      *          // or alternatively:
-     *          Try<String> suppliedTry2 = Try.of( Try.from(myStringSupplier) );
-     * }
+     *          Try<String> suppliedTry2 = Try.of( ExSupplier.from(myStringSupplier) );
+     *      }
+     * </p>
+     * <p>
+     *     If the {@code ExSupplier} returns {@code null}, this method
+     *     will return a {@link Failure} containing a {@link NullPointerException}.
      * </p>
      *
      * @param xSupplier a Supplier which could potentially throw an Exception.
      * @return supplied type or exception wrapped in a Try
      * @param <T> non-exceptional type
      */
-    static <T> Try<T> of(ExSupplier<T> xSupplier) {
+    @NotNull
+    static <T> Try<T> of(@NotNull ExSupplier<T> xSupplier) {
         requireNonNull( xSupplier );
         try {
-            return Success.of( xSupplier.get() );
+            // we still need to wrap in a requireNonNull() because we could create
+            // an ad-hoc ExSupplier (e.g., as a code block) which could return null
+            return Success.of( requireNonNull( xSupplier.get() ) );
         } catch (Throwable t) {
             return Failure.of( t );
         }
-    }
-
-    /**
-     * Invoke an {@link ExFunction} to create a {@link Try}.
-     * <p>
-     *     If the {@link ExFunction} is successful, a {@link Success} will be returned.
-     *     If an exception is thrown by the {@link ExFunction}, a {@link Failure} will be returned.
-     * </p>
-     * <p>
-     *     {@link ExFunction}s can throw checked or unchecked Exceptions.
-     *     To use a {@link Function} (which can only throw RuntimeExceptions), use as follows:
-     *     {@snippet :
-     *          Try<String> myFunctionResult = Try.of( myFunction::apply );
-     *          // or alternatively:
-     *          Try<String> myFunctionResult2 = Try.of( Try.from(myFunction) );
-     * }
-     * </p>
-     *
-     * @param in function input
-     * @param xFn a Function which could potentially throw an Exception.
-     * @return supplied type or exception wrapped in a Try
-     * @param <T> function input type
-     * @param <R> function return type
-     */
-    static <T, R> Try<R> of(final T in, ExFunction<T, R> xFn) {
-        requireNonNull( xFn );
-        try {
-            return Success.of( xFn.apply( in ) );
-        } catch (Throwable t) {
-            return Failure.of( t );
-        }
-    }
-
-    /**
-     * Invoke an {@link ExBiFunction} to create a {@link Try}.
-     * <p>
-     *     If the {@link ExBiFunction} is successful, a {@link Success} will be returned.
-     *     If an exception is thrown by the {@link ExBiFunction}, a {@link Failure} will be returned.
-     * </p>
-     * <p>
-     *     {@link ExBiFunction}s can throw checked or unchecked Exceptions.
-
-     * </p>
-     *
-     * @param tIn function input
-     * @param uIn function input
-     * @param xBiFn a BiFunction which could potentially throw an Exception.
-     * @return supplied type or exception wrapped in a Try
-     * @param <T> function input type
-     * @param <U> function input type
-     * @param <R> function return type
-     */
-    static <T, U, R> Try<R> of(final T tIn, final U uIn, ExBiFunction<T, U, R> xBiFn) {
-        requireNonNull( xBiFn );
-        try {
-            return Success.of( xBiFn.apply( tIn, uIn ) );
-        } catch (Throwable t) {
-            return Failure.of( t );
-        }
-    }
-
-
-    /**
-     * Convert a Supplier to an ExSupplier. The Supplier is only invoked when used.
-     *
-     * @param supplier Supplier
-     * @return ExSupplier
-     * @param <T> Supplier type parameter
-     */
-    static <T> ExSupplier<Try<T>> from(Supplier<T> supplier) {
-        requireNonNull( supplier );
-        return () -> of( supplier::get );
-    }
-
-    /**
-     * Convert a Function to an ExFunction. The Function is only invoked when used.
-     * @param fn Function to convert
-     * @return ExFunction
-     * @param <T> function input
-     * @param <R> function return type
-     */
-    static <T, R> ExFunction<T, Try<R>> from(Function<T, R> fn) {
-        requireNonNull( fn );
-        return (t) -> of( t, fn::apply );
-    }
-
-    /**
-     * Convert a BiFunction to an ExBiFunction. The BiFunction is only invoked when used.
-     * @param biFn BiFunction to convert
-     * @return ExBiFunction
-     * @param <T> first function input
-     * @param <U> second function input
-     * @param <R> function return type
-     */
-    static <T, U, R> ExBiFunction<T, U, Try<R>> from(BiFunction<T, U, R> biFn) {
-        requireNonNull( biFn );
-        return (t, u) -> of( t, u, biFn::apply );
     }
 
 
@@ -231,9 +145,9 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         requireNonNull( fn );
 
         try (AC ac = supplier.get()) {
-            return Try.Success.of( fn.apply( ac ) );
+            return Success.of( fn.apply( ac ) );
         } catch (Throwable t) {
-            return Try.Failure.of( t );
+            return Failure.of( t );
         }
     }
 
@@ -258,9 +172,9 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         requireNonNull( biFn );
 
         try (AC1 ac1 = supplier1.get(); AC2 ac2 = supplier2.get()) {
-            return Try.Success.of( biFn.apply( ac1, ac2 ) );
+            return Success.of( biFn.apply( ac1, ac2 ) );
         } catch (Throwable t) {
-            return Try.Failure.of( t );
+            return Failure.of( t );
         }
     }
 
@@ -293,6 +207,8 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      */
     @NotNull <V2> Try<V2> biFlatMap(@NotNull ExFunction<? super V, ? extends Try<? extends V2>> fnSuccess,
                                     @NotNull ExFunction<? super Throwable, ? extends Try<? extends V2>> fnFailure);
+
+
 
 
     /**
@@ -349,12 +265,12 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * @see #consume(Consumer)
      * @see #consumeErr(Consumer)
      */
-    @NotNull Try<V> exec(@NotNull Consumer<? super V> successConsumer);
+    @NotNull Try<V> exec(@NotNull ExConsumer<? super V> successConsumer);
 
 
     /**
      * Executes the given consumer if this is a {@link Success}. This is a terminal operation.
-     * Unlike {@link #exec(Consumer)}, this method does <b>NOT</b> handle Exceptions.
+     * Unlike {@link #exec(ExConsumer)}, this method does <b>NOT</b> handle Exceptions.
      *
      * @param successConsumer the consumer function to be executed
      * @throws NullPointerException if successConsumer is {@code null}.
@@ -422,7 +338,8 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * @see #map(ExFunction)
      * @see #mapErr(ExFunction)
      */
-    @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super V, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure);
+    @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super V, ? extends V2> fnSuccess,
+                                @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure);
 
 
     /**
@@ -585,6 +502,8 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Internal helper methods
+    // ... if functions with greater arity are added later, consider moving these to ExFunction itself
+    //     or perhaps use an apply with variable-length input & rawtypes (?)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static <IN, OUT> Try<OUT> mapChecked(IN in, ExFunction<? super IN, ? extends OUT> fn) {
         try {
@@ -594,6 +513,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         }
     }
 
+
     @SuppressWarnings("unchecked")
     private static <IN, OUT> Try<OUT> flatMapChecked(IN in, ExFunction<? super IN, ? extends Try<? extends OUT>> fn) {
         try {
@@ -602,6 +522,8 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
             return Failure.of( t );
         }
     }
+
+
 
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
@@ -625,7 +547,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
          * @param value successful value.
          */
         public Success {
-            Objects.requireNonNull( value );
+            requireNonNull( value );
         }
 
         /**
@@ -662,23 +584,23 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         @Override
         public @NotNull <V2> Try<V2> biFlatMap(@NotNull ExFunction<? super T, ? extends Try<? extends V2>> fnSuccess,
                                                @NotNull ExFunction<? super Throwable, ? extends Try<? extends V2>> fnFailure) {
-            Objects.requireNonNull( fnFailure );
+            requireNonNull( fnFailure );
             return flatMap( fnSuccess );
         }
 
         @Override
         public @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super T, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
-            Objects.requireNonNull( fnSuccess );
-            Objects.requireNonNull( fnFailure );
+            requireNonNull( fnSuccess );
+            requireNonNull( fnFailure );
             return Try.mapChecked( value, fnSuccess );
         }
 
         @Override
         public <T1> @NotNull T1 fold(@NotNull Function<? super T, ? extends T1> fnSuccess,
                                      @NotNull Function<? super Throwable, ? extends T1> fnFailure) {
-            Objects.requireNonNull( fnSuccess );
-            Objects.requireNonNull( fnFailure );
-            return Objects.requireNonNull( fnSuccess.apply( value ) );
+            requireNonNull( fnSuccess );
+            requireNonNull( fnFailure );
+            return requireNonNull( fnSuccess.apply( value ) );
         }
 
 
@@ -690,23 +612,22 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         @Override
         public @NotNull Try<T> filter(@NotNull Predicate<? super T> predicate,
                                       @NotNull ExFunction<? super T, ? extends Throwable> fnUnmatched) {
-
             requireNonNull( predicate );
             requireNonNull( fnUnmatched );
 
-            if (predicate.test( value )) {
-                return this;
-            }
-
             try {
+                if (predicate.test( value )) {
+                    return this;
+                }
                 return Failure.of( fnUnmatched.apply( value ) );
             } catch (Throwable t) {
+                // this includes predicate testing failures
                 return Failure.of( t );
             }
         }
 
         @Override
-        public @NotNull Try<T> exec(@NotNull Consumer<? super T> successConsumer) {
+        public @NotNull Try<T> exec(@NotNull ExConsumer<? super T> successConsumer) {
             requireNonNull( successConsumer );
             try {
                 successConsumer.accept( value );
@@ -815,7 +736,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
          * @param err Throwable
          */
         public Failure {
-            Objects.requireNonNull( err );
+            requireNonNull( err );
             throwIfFatal( err );
         }
 
@@ -843,15 +764,15 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         @Override
         public @NotNull <V2> Try<V2> biFlatMap(@NotNull ExFunction<? super T, ? extends Try<? extends V2>> fnSuccess,
                                                @NotNull ExFunction<? super Throwable, ? extends Try<? extends V2>> fnFailure) {
-            Objects.requireNonNull( fnSuccess );
-            Objects.requireNonNull( fnFailure );
+            requireNonNull( fnSuccess );
+            requireNonNull( fnFailure );
             return Try.flatMapChecked( err, fnFailure );
         }
 
         @Override
         public @NotNull <V2> Try<V2> biMap(@NotNull ExFunction<? super T, ? extends V2> fnSuccess, @NotNull ExFunction<? super Throwable, ? extends Throwable> fnFailure) {
-            Objects.requireNonNull( fnSuccess );
-            Objects.requireNonNull( fnFailure );
+            requireNonNull( fnSuccess );
+            requireNonNull( fnFailure );
             return failMap( fnFailure );
         }
 
@@ -867,9 +788,9 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
 
         @Override
         public <U> @NotNull U fold(@NotNull Function<? super T, ? extends U> fnSuccess, @NotNull Function<? super Throwable, ? extends U> fnFailure) {
-            Objects.requireNonNull( fnSuccess );
-            Objects.requireNonNull( fnFailure );
-            return Objects.requireNonNull( fnFailure.apply( err ) );
+            requireNonNull( fnSuccess );
+            requireNonNull( fnFailure );
+            return requireNonNull( fnFailure.apply( err ) );
         }
 
         @Override
@@ -878,32 +799,33 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         }
 
         @Override
-        public @NotNull Try<T> filter(@NotNull Predicate<? super T> predicate, @NotNull ExFunction<? super T, ? extends Throwable> fnUnmatched) {
-            Objects.requireNonNull( predicate );
-            Objects.requireNonNull( fnUnmatched );
+        public @NotNull Try<T> filter(@NotNull Predicate<? super T> predicate,
+                                      @NotNull ExFunction<? super T, ? extends Throwable> fnUnmatched) {
+            requireNonNull( predicate );
+            requireNonNull( fnUnmatched );
             return this;
         }
 
         @Override
-        public @NotNull Try<T> exec(@NotNull Consumer<? super T> successConsumer) {
-            Objects.requireNonNull( successConsumer );
+        public @NotNull Try<T> exec(@NotNull ExConsumer<? super T> successConsumer) {
+            requireNonNull( successConsumer );
             return this;
         }
 
         @Override
         public void consume(@NotNull Consumer<? super T> successConsumer) {
-            Objects.requireNonNull( successConsumer );
+            requireNonNull( successConsumer );
         }
 
         @Override
         public @NotNull <V2> Try<V2> map(@NotNull ExFunction<? super T, ? extends V2> fnSuccess) {
-            Objects.requireNonNull( fnSuccess );
+            requireNonNull( fnSuccess );
             return coerce();
         }
 
         @Override
         public @NotNull <V2> Try<V2> flatMap(@NotNull ExFunction<? super T, ? extends Try<? extends V2>> fnSuccess) {
-            Objects.requireNonNull( fnSuccess );
+            requireNonNull( fnSuccess );
             return coerce();
         }
 
@@ -939,13 +861,13 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         @Override
         public @NotNull T orElseGet(@NotNull Supplier<? extends T> okSupplier) {
             requireNonNull( okSupplier );
-            return Objects.requireNonNull( okSupplier.get() );
+            return requireNonNull( okSupplier.get() );
         }
 
         @Override
         public @NotNull T recover(@NotNull Function<? super Throwable, ? extends T> fnFailureToSuccess) {
             requireNonNull( fnFailureToSuccess );
-            return Objects.requireNonNull( fnFailureToSuccess.apply( err ) );
+            return requireNonNull( fnFailureToSuccess.apply( err ) );
         }
 
         @Override

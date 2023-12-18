@@ -1,5 +1,6 @@
 package net.xyzsd.dichotomy.trying.function;
 
+import net.xyzsd.dichotomy.trying.Try;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
@@ -23,45 +24,21 @@ public interface ExFunction<T, R>  {
      * @return the function result
      * @throws Exception exception
      */
-    @NotNull R apply(T t) throws Exception;
+    @NotNull R apply(T t) throws Throwable;
 
 
     /**
-     * Composes this ExFunction with a regular Function.
-     *
-     * @param before the Function to be composed with
-     * @param <V> the input type of the composed Function
-     * @return the composed ExFunction
-     * @throws NullPointerException if the before Function is null
+     * Convert a Function to an ExFunction. The Function is only invoked when used.
+     * @param fn Function to convert
+     * @return ExFunction
+     * @param <IN> function input
+     * @param <OUT> function return type
+     * @throws NullPointerException if input fn is null OR return value is null
      */
-    // compose with a regular Function
-    @NotNull
-    default <V> ExFunction<V, R> compose(@NotNull Function<? super V, ? extends T> before) {
-        requireNonNull(before);
-        return (V v) -> apply(before.apply(v));
+    @NotNull static <IN,OUT> ExFunction<IN,OUT> from(@NotNull final Function<IN,OUT> fn) {
+        requireNonNull( fn );
+        return requireNonNull( fn::apply );
     }
-
-
-    /**
-     * Returns a composed {@code ExFunction} that performs, in sequence, this
-     * operation followed by the {@code after} operation.
-     * <p>
-     *     Note that the {@code after} operation will not be performed if the
-     *     first operation throws an exception.
-     * </p>
-     *
-     * @param after the operation to perform after this operation
-     * @param <V> output type of the after function and of the composed function
-     * @return a composed {@code ExFunction} that performs this operation followed by the {@code after} operation.
-     * @throws NullPointerException if {@code after} is null
-     * @see #andThenEx(ExFunction)
-     */
-    @NotNull
-    default <V> ExFunction<T, V> andThen(@NotNull Function<? super R, ? extends V> after) {
-        requireNonNull(after);
-        return (T t) -> after.apply(apply(t));
-    }
-
 
 
 
@@ -75,7 +52,7 @@ public interface ExFunction<T, R>  {
      * @throws NullPointerException if before is null
      */
     @NotNull
-    default <V> ExFunction<V, R> composeEx(@NotNull ExFunction<? super V, ? extends T> before) {
+    default <V> ExFunction<V, R> compose(@NotNull ExFunction<? super V, ? extends T> before) {
         requireNonNull(before);
         return (V v) -> apply(before.apply(v));
     }
@@ -93,10 +70,9 @@ public interface ExFunction<T, R>  {
      * @param <V> output type of the after function and of the composed function
      * @return a composed {@code ExFunction} that performs this operation followed by the {@code after} operation.
      * @throws NullPointerException if {@code after} is null
-     * @see #andThen(Function) 
      */
     @NotNull
-    default <V> ExFunction<T, V> andThenEx(@NotNull ExFunction<? super R, ? extends V> after) {
+    default <V> ExFunction<T, V> andThen(@NotNull ExFunction<? super R, ? extends V> after) {
         requireNonNull(after);
         return (T t) -> after.apply(apply(t));
     }

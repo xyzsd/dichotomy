@@ -2,7 +2,7 @@
  * Module declaration for the net.xyzsd.dichotomy module.
  * This module exports three packages:
  * <ul>
- * <li>>net.xyzsd.dichotomy.trying.function</li>
+ * <li>net.xyzsd.dichotomy.trying.function</li>
  * <li>net.xyzsd.dichotomy</li>
  * <li>net.xyzsd.dichotomy.trying</li>
  * </ul>

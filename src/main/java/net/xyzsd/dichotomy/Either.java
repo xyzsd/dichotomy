@@ -869,7 +869,7 @@ public sealed interface Either<L, R> {
         @Override
         public @NotNull <L2> Either<L2, R> mapLeft(@NotNull Function<? super L, ? extends L2> leftMapper) {
             requireNonNull( leftMapper );
-            return (Either<L2, R>) Either.ofLeft( leftMapper.apply( value ) );
+            return Either.ofLeft( leftMapper.apply( value ) );
         }
 
         /**

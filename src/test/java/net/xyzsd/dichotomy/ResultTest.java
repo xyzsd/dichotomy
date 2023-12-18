@@ -63,21 +63,21 @@ class ResultTest {
     void ofNullable() {
         // this test assumes that other method tests pass
         Result<String, Empty> resultFromNull = Result.ofNullable( null );
-        assertTrue( resultFromNull instanceof Err );
+        assertInstanceOf( Err.class, resultFromNull );
 
         Result<String, Empty> resultNotNull = Result.ofNullable( OK_VALUE );
-        assertTrue( resultNotNull instanceof OK);
+        assertInstanceOf( OK.class, resultNotNull );
     }
 
 
     @Test
     void from() {
         // this test assumes that other method tests pass
-        Result<String, Empty> resultFromEmpty = Result.from( Optional.<String>empty() );
-        assertTrue( resultFromEmpty instanceof Err );
+        Result<String, Empty> resultFromEmpty = Result.from( Optional.empty() );
+        assertInstanceOf( Err.class, resultFromEmpty );
 
         Result<String, Empty> result = Result.from( Optional.of( OK_VALUE ) );
-        assertTrue( result instanceof OK );
+        assertInstanceOf( OK.class, result );
     }
 
     @Test

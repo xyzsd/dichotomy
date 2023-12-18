@@ -2,6 +2,7 @@ package net.xyzsd.dichotomy.trying.function;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -32,8 +33,21 @@ public interface ExBiFunction<T, U, R> {
      * @return the function result
      * @throws Exception exception
      */
-    @NotNull R apply(T t, U u) throws Exception;
+    @NotNull R apply(T t, U u) throws Throwable;
 
+    /**
+     * Convert a BiFunction to an ExBiFunction. The BiFunction is only invoked when used.
+     * @param biFn BiFunction to convert
+     * @return ExBiFunction
+     * @param <IN1> first function input
+     * @param <IN2> second function input
+     * @param <OUT> function return type
+     * @throws NullPointerException if input biFn is null OR return value is null
+     */
+    @NotNull static <IN1, IN2, OUT> ExBiFunction<IN1, IN2, OUT> from(@NotNull final BiFunction<IN1, IN2, OUT> biFn) {
+        requireNonNull( biFn );
+        return requireNonNull( biFn::apply );
+    }
 
     /**
      * Returns a composed function that applies after to the result of the first function.
