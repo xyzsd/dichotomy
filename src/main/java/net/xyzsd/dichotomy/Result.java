@@ -937,7 +937,7 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull V expect() throws RuntimeException {
+        public @NotNull V expect()  {
             return value;
         }
 

@@ -27,10 +27,10 @@ public interface ExSupplier<T> {
      *
      * @param supplier Supplier
      * @return ExSupplier
-     * @param <OUT> Supplier type parameter
+     * @param <V> Supplier type parameter
      * @throws NullPointerException if input fn is null OR return value is null
      */
-    @NotNull static <OUT> ExSupplier<OUT> from(@NotNull final Supplier<OUT> supplier) {
+    @NotNull static <V> ExSupplier<V> from(@NotNull final Supplier<V> supplier) {
         requireNonNull( supplier );
         return requireNonNull( supplier::get);
     }

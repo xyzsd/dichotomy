@@ -1,6 +1,5 @@
 package net.xyzsd.dichotomy;
 
-import net.xyzsd.dichotomy.util.Conversion;
 import org.junit.jupiter.api.Test;
 
 import static net.xyzsd.dichotomy.TestUtils.neverFunction;

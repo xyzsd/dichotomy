@@ -16,4 +16,5 @@ module net.xyzsd.dichotomy {
     exports net.xyzsd.dichotomy.trying.function;
     exports net.xyzsd.dichotomy;
     exports net.xyzsd.dichotomy.trying;
+    exports net.xyzsd.dichotomy.collectors;
 }

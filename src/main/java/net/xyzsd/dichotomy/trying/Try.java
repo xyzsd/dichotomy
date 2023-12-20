@@ -432,6 +432,73 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      */
     @NotNull V orElseGet(@NotNull Supplier<? extends V> okSupplier);
 
+
+
+    /**
+     * If {@code this} is {@link Failure}, return it. Otherwise, return the next {@link Try} given.
+     * The next {@link Try} can have a different parameterized type.
+     *
+     * @param nextTry The {@link Try} to return.
+     * @param <V2>       type of the value, which can be different from the original type
+     * @see #and(ExSupplier)
+     * @see #or(Try)
+     * @see #or(ExSupplier)
+     * @return this or the given Try
+     */
+    @NotNull <V2> Try<V2> and(@NotNull Try<V2> nextTry);
+
+
+    /**
+     * If {@code this} is {@link Failure}, return it (without invoking the {@link Supplier}).
+     * Otherwise, return the next {@link Try} supplied.
+     * The next {@link Try} can have a different parameterized type.
+     *
+     * @param nextTrySupplier The supplier of a {@link Try} to return; only called if {@code this} is a {@link Success}.
+     * @param <V2>               type of the value, which can be different from the original type
+     * @throws NullPointerException if the supplied {@link Try} is {@code null}.
+     * @see #and(Try)
+     * @see #or(Try)
+     * @see #or(ExSupplier)
+     * @return this or the supplied Try
+     */
+    default @NotNull <V2> Try<V2> and(@NotNull final ExSupplier<Try<V2>> nextTrySupplier) {
+        return flatMap( v -> nextTrySupplier.get() );
+    }
+
+
+
+
+    /**
+     * If {@code this} is {@link Success}, return it.
+     * Otherwise, return the next {@link Try} given.
+     *
+     * @param nextTry The {@link Try} to return.
+     * @see #or(ExSupplier)
+     * @see #and(Try)
+     * @see #and(ExSupplier)
+     * @return this or the given Try
+     */
+    @NotNull Try<V> or(@NotNull Try<V> nextTry);
+
+    /**
+     * If {@code this} is {@link Success}, return it (without invoking the {@link Supplier}).
+     * Otherwise, return the next {@link Try} supplied.
+     *
+     * @param nextTrySupplier The supplier of a {@link Try} to return; only called if {@code this} is a {@link Failure}.
+     * @throws NullPointerException if the supplier is called and returns {@code null}.
+     * @see #or(Try)
+     * @see #and(Try)
+     * @see #and(ExSupplier)
+     * @return this or the supplied Try
+     */
+    default @NotNull Try<V> or(@NotNull ExSupplier<Try<V>> nextTrySupplier) {
+        return flatMapErr( t -> nextTrySupplier.get() );
+    }
+
+
+
+
+
     /**
      * Recover from an error; ignore the {@link Failure} value if present,
      * and apply the mapping function to get an {@link Success}.
@@ -696,6 +763,21 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
             return value;
         }
 
+
+        @Override
+        public @NotNull <V2> Try<V2> and(@NotNull Try<V2> nextTry) {
+            requireNonNull( nextTry );
+            return nextTry;
+        }
+
+        @Override
+        public @NotNull Try<T> or(@NotNull Try<T> nextTry) {
+            requireNonNull( nextTry );
+            return this;
+        }
+
+
+
         @Override
         public @NotNull T recover(@NotNull Function<? super Throwable, ? extends T> fnFailureToSuccess) {
             requireNonNull( fnFailureToSuccess );
@@ -862,6 +944,18 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         public @NotNull T orElseGet(@NotNull Supplier<? extends T> okSupplier) {
             requireNonNull( okSupplier );
             return requireNonNull( okSupplier.get() );
+        }
+
+        @Override
+        public @NotNull <V2> Try<V2> and(@NotNull Try<V2> nextTry) {
+            requireNonNull( nextTry );
+            return coerce();
+        }
+
+        @Override
+        public @NotNull Try<T> or(@NotNull Try<T> nextTry) {
+            requireNonNull( nextTry );
+            return nextTry;
         }
 
         @Override

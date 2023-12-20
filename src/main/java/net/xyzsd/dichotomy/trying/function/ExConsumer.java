@@ -18,7 +18,7 @@ public interface ExConsumer<T> {
     /**
      * Performs this operation on the given argument.
      * @param t input
-     * @throws Exception exception
+     * @throws Throwable exception
      */
     void accept(T t) throws Throwable;
 
@@ -47,7 +47,7 @@ public interface ExConsumer<T> {
      * @return a composed {@code ExConsumer} that performs this operation followed by the {@code after} operation.
      * @throws NullPointerException if {@code after} is null
      */
-    default ExConsumer<T> andThenEx(@NotNull ExConsumer<? super T> after) {
+    default ExConsumer<T> andThen(@NotNull ExConsumer<? super T> after) {
         requireNonNull(after);
         return (T t) -> { after.accept(t); this.accept(t); };
     }

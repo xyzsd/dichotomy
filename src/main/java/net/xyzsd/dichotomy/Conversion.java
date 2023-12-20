@@ -1,9 +1,13 @@
-package net.xyzsd.dichotomy.util;
+package net.xyzsd.dichotomy;
 
 import net.xyzsd.dichotomy.Either;
 import net.xyzsd.dichotomy.Result;
 import net.xyzsd.dichotomy.trying.Try;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 
 /**
@@ -12,9 +16,6 @@ import org.jetbrains.annotations.NotNull;
  * Convert {@link Either}s, {@link Result}s, or {@link Try}s to another monadic type.
  */
 public interface Conversion {
-
-    // This is a separate package, to reduce dependencies between monad types if
-    // a user wants to extract, say, the Either package from the module and use it in their own project
 
     /**
      * Converts a {@link Result} into an {@link Either}.
@@ -108,6 +109,9 @@ public interface Conversion {
     static <V, X extends Exception> Try<V> toTry(@NotNull Result<V, X> result) {
         return result.fold( Try::ofSuccess, Try::ofFailure );
     }
+
+
+
 
 
 }
