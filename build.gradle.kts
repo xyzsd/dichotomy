@@ -24,7 +24,7 @@ dependencies {
 
 java { 
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(20))
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 
@@ -41,6 +41,7 @@ tasks.getByName<Test>("test") {
 
 tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:preview")
+    options.compilerArgs.add("-Xlint:unchecked")
 }
 
 
@@ -120,7 +121,7 @@ tasks.javadoc {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
     val javadocOptions = options as CoreJavadocOptions
-    javadocOptions.addStringOption("source", "21")
+    javadocOptions.addStringOption("source", "20")
 }
 
 // for reproducible builds

@@ -2,8 +2,7 @@ package net.xyzsd.dichotomy;
 
 import org.junit.jupiter.api.Test;
 
-import static net.xyzsd.dichotomy.TestUtils.neverFunction;
-import static net.xyzsd.dichotomy.TestUtils.neverSupplier;
+import static net.xyzsd.dichotomy.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -429,10 +428,21 @@ public class EitherTest {
         assertTrue( rightSwap.containsLeft( "right" ) );
     }
 
+
     @Test
-    void toResult() {
-        assertEquals( Result.ofErr( LVAL ), Conversion.toResult( LEFT ) );
-        assertEquals( Result.ofOK( RVAL ), Conversion.toResult( RIGHT ) );
+    void consume() {
+        assertThrows( NullPointerException.class, () -> LEFT.consume( null ) );
+        assertThrows( NullPointerException.class, () -> RIGHT.consume( null ) );
+        assertDoesNotThrow( () -> LEFT.consume( neverConsumer() ) );
+        //
+        // exceptions in consumers are thrown
+        assertThrows( ArithmeticException.class,
+                () -> RIGHT.consume( s -> {throw new ArithmeticException("!"); } ) );
+
+        //
+        SingleUseConsumer<Integer> consumer = new SingleUseConsumer<>();
+        RIGHT.consume( consumer );
+        assertTrue( consumer.usedJustOnce() );
     }
 
     // because we don't want illegal monads

@@ -1,6 +1,5 @@
 package net.xyzsd.dichotomy.trying.function;
 
-import net.xyzsd.dichotomy.trying.Try;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;

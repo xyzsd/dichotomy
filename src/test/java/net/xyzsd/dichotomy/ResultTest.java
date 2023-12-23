@@ -11,8 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static net.xyzsd.dichotomy.TestUtils.neverFunction;
-import static net.xyzsd.dichotomy.TestUtils.neverSupplier;
+import static net.xyzsd.dichotomy.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -130,12 +129,12 @@ class ResultTest {
         assertTrue( leftSwap.containsErr( "ok!" ) );
         assertTrue( left.contains( "ok!" ) );   // ensure original unchanged
 
-        Result<String, String> right = Result.ofErr( "error!" );
-        assertTrue( right.containsErr( "error!" ) );
+        Result<String, String> right = Result.ofErr( "value!" );
+        assertTrue( right.containsErr( "value!" ) );
         Result<String, String> rightSwap = right.swap();
-        assertTrue( rightSwap.contains( "error!" ) );
-        assertTrue( rightSwap.contains( "error!" ) );
-        assertTrue( right.containsErr( "error!" ) ); // ensure original unchanged
+        assertTrue( rightSwap.contains( "value!" ) );
+        assertTrue( rightSwap.contains( "value!" ) );
+        assertTrue( right.containsErr( "value!" ) ); // ensure original unchanged
     }
 
 
@@ -250,6 +249,22 @@ class ResultTest {
         SingleUseConsumer<String> errConsumer = new SingleUseConsumer<>();
         ERR.match( errConsumer );
         assertTrue( errConsumer.neverUsed() );
+    }
+
+    @Test
+    void consume() {
+        assertThrows( NullPointerException.class, () -> ERR.consume( null ) );
+        assertThrows( NullPointerException.class, () -> OK.consume( null ) );
+        assertDoesNotThrow( () -> ERR.consume( neverConsumer() ) );
+        //
+        // exceptions in consumers are thrown
+        assertThrows( ArithmeticException.class,
+                () -> OK.consume( s -> {throw new ArithmeticException("!"); } ) );
+
+        //
+        SingleUseConsumer<String> consumer = new SingleUseConsumer<>();
+        OK.consume( consumer );
+        assertTrue( consumer.usedJustOnce() );
     }
 
     @Test

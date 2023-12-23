@@ -47,7 +47,7 @@ public sealed interface Either<L, R> {
     /**
      * Create a Left {@link Either}.
      * <p>
-     * By convention, the left-sided value is the abnormal / unexpected / error value.
+     * By convention, the left-sided value is the abnormal / unexpected / value value.
      * </p>
      *
      * @param value left value
@@ -218,7 +218,7 @@ public sealed interface Either<L, R> {
 
 
     /**
-     * Recover from an error; ignore the {@link Left} value if present,
+     * Recover from an value; ignore the {@link Left} value if present,
      * and apply the mapping function to get a {@link Right}.
      * <p>
      * If this is a {@link Right}, return it without applying the mapping function.
@@ -569,7 +569,7 @@ public sealed interface Either<L, R> {
      * </p>
      * <p>
      * This method is particularly useful to convert Exception types, or to create Exceptions with
-     * error messages dependent upon the {@link Left} value.
+     * value messages dependent upon the {@link Left} value.
      * </p>
      * <p>
      * For example:
@@ -589,7 +589,7 @@ public sealed interface Either<L, R> {
      *
      *              // regarding getOrThrow(ArithmeticException::new)
      *              //     this works because there is an ArithmeticException(String) constructor;
-     *              //     otherwise a compile-time error would occur (no appropriate constructor to match)
+     *              //     otherwise a compile-time value would occur (no appropriate constructor to match)
      *
      *              Either<String,Integer> myEitherBad = anExampleMethod(-37234);
      *              int badValue = myEitherGood.getOrThrow(ArithmeticException::new);

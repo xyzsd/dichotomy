@@ -13,15 +13,15 @@ import static java.util.Objects.requireNonNull;
  * Collectors for {@link Result}s.
  * <p>
  * Three collectors are provided. The default collector ({@link #collector()}
- * is error-biased. However, both ok-biased and a collector which will return
- * all ok and error values encountered are included.
+ * is value-biased. However, both ok-biased and a collector which will return
+ * all ok and value values encountered are included.
  * </p>
  */
 public interface ResultCollectors {
 
 
     /**
-     * Default error-biased collector.
+     * Default value-biased collector.
      * <p>
      * This will return Err values, unless there are none; then OK values will be returned.
      * If there are no OK values (and no Err values), an Err with an empty List will be returned.
@@ -82,9 +82,13 @@ public interface ResultCollectors {
 
 
     static private <OK, ERR> void add(Accumulator<OK, ERR> listBox, Result<OK, ERR> result) {
-        switch (result) {
-            case Result.OK<OK, ERR> ok -> listBox.okList.add( ok.get() );
-            case Result.Err<OK, ERR> err -> listBox.errList.add( err.get() );
+        // TODO: use switch/case when we support JDK > 20
+        if(result instanceof Result.OK<OK, ERR> ok) {
+            listBox.okList.add( ok.value() );
+        } else if(result instanceof Result.Err<OK, ERR> err) {
+            listBox.errList.add( err.value() );
+        } else {
+            throw new IllegalStateException();
         }
     }
 

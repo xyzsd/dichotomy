@@ -1,13 +1,17 @@
 package net.xyzsd.dichotomy.collectors;
 
-import net.xyzsd.dichotomy.Conversion;
-import net.xyzsd.dichotomy.Either;
 import net.xyzsd.dichotomy.Result;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// multipurpose class for creating collectors, internal use only
+/**
+ * Accumulator for use in creating Collectors.
+ *
+ * @param <OK> ok/success/right type
+ * @param <ERR> err/failure/left type
+ */
+
 final class Accumulator<OK, ERR> {
     final List<OK> okList = new ArrayList<>();
     final List<ERR> errList = new ArrayList<>();
@@ -30,7 +34,6 @@ final class Accumulator<OK, ERR> {
         }
     }
 
-    // ignore OK if there are none, or ANY ERRs present [DEFAULT]
     Result<List<OK>, List<ERR>> finishBiasErr() {
         if (okList.isEmpty() || !errList.isEmpty()) {
             return Result.ofErr( List.copyOf( errList ) );

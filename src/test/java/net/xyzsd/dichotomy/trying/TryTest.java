@@ -82,16 +82,17 @@ class TryTest {
     private static void assertMessage(final String expectedText, Try<?> tried) {
         requireNonNull( expectedText );
         requireNonNull( tried );
-        switch (tried) {
-            case Try.Success<?> __ -> throw new AssertionError( "Expected Failure, not " + tried );
-            case Try.Failure<?> failure -> {
-                if (!Objects.equals( expectedText, failure.err().getMessage() )) {
-                    throw new AssertionError( String.format( "Expected '%s' Actual: '%s'",
-                            expectedText,
-                            failure.err().getMessage()
-                    ) );
-                }
+        if (tried instanceof Try.Success<?>) {
+            throw new AssertionError( "Expected Failure, not " + tried );
+        } else if (tried instanceof Try.Failure<?> failure) {
+            if (!Objects.equals( expectedText, failure.err().getMessage() )) {
+                throw new AssertionError( String.format( "Expected '%s' Actual: '%s'",
+                        expectedText,
+                        failure.err().getMessage()
+                ) );
             }
+        } else {
+            throw new IllegalStateException();
         }
     }
 
@@ -99,16 +100,18 @@ class TryTest {
     private static <T extends Throwable> void assertException(final Class<T> exceptionClass, Try<?> tried) {
         requireNonNull( exceptionClass );
         requireNonNull( tried );
-        switch (tried) {
-            case Try.Success<?> __ -> throw new AssertionError( "Expected Failure, not " + tried );
-            case Try.Failure<?> failure -> {
-                if (!Objects.equals( exceptionClass, failure.err().getClass() )) {
-                    throw new AssertionError( String.format( "Expected class '%s' Actual: '%s'",
-                            exceptionClass.getClass(),
-                            failure.err().getClass()
-                    ) );
-                }
+
+        if (tried instanceof Try.Success<?>) {
+            throw new AssertionError( "Expected Failure, not " + tried );
+        } else if (tried instanceof Try.Failure<?> failure) {
+            if (!Objects.equals( exceptionClass, failure.err().getClass() )) {
+                throw new AssertionError( String.format( "Expected class '%s' Actual: '%s'",
+                        exceptionClass.getClass(),
+                        failure.err().getClass()
+                ) );
             }
+        } else {
+            throw new IllegalStateException();
         }
     }
 
@@ -116,16 +119,27 @@ class TryTest {
     private static void assertSuppressed(final int nSuppressed, Try<?> tried) {
         if (nSuppressed < 0) {throw new IllegalArgumentException();}
         requireNonNull( tried );
-        switch (tried) {
-            case Try.Success<?> __ -> throw new AssertionError( "Expected Failure, not " + tried );
-            case Try.Failure<?> failure -> {
-                if (nSuppressed != failure.err().getSuppressed().length)
-                    throw new AssertionError( String.format( "Expected %d suppressed exceptions; actual count: %d: %s",
-                            nSuppressed,
-                            failure.err().getSuppressed().length,
-                            Arrays.asList( failure.err().getSuppressed() )
-                    ) );
+
+        if (tried instanceof Try.Success<?>) {
+            throw new AssertionError( "Expected Failure, not " + tried );
+        } else if (tried instanceof Try.Failure<?> failure) {
+            if (nSuppressed != failure.err().getSuppressed().length) {
+                throw new AssertionError( String.format( "Expected %d suppressed exceptions; actual count: %d: %s",
+                        nSuppressed,
+                        failure.err().getSuppressed().length,
+                        Arrays.asList( failure.err().getSuppressed() )
+                ) );
             }
+        } else {
+            throw new IllegalStateException();
+        }
+    }
+
+    private static void assertSuccessfulTry(String expectedValue, Try<String> in) {
+        if(in instanceof Try.Success<String> success) {
+            assertEquals( expectedValue, success.value() );
+        } else {
+            throw new AssertionError();
         }
     }
 
@@ -183,10 +197,8 @@ class TryTest {
                         x.write( "HelloWorld" );
                         return x.toString();
                     } );
-            switch (helloTry) {
-                case Try.Failure<String> __ -> throw new AssertionError();
-                case Try.Success<String> success -> assertEquals( "HelloWorld", success.value() );
-            }
+
+            assertSuccessfulTry("HelloWorld", helloTry);
         }
 
         // supplier fail
@@ -243,17 +255,13 @@ class TryTest {
             final Try<String> helloTry = Try.withResources(
                     StringWriter::new,
                     StringWriter::new,
-                    (s1,s2) -> {
+                    (s1, s2) -> {
                         s1.write( "Hello" );
-                        s2.write( "World");
-                        return s1.toString()+ s2;
+                        s2.write( "World" );
+                        return s1.toString() + s2;
                     } );
 
-
-            switch (helloTry) {
-                case Try.Failure<String> __ -> throw new AssertionError();
-                case Try.Success<String> success -> assertEquals( "HelloWorld", success.value() );
-            }
+            assertSuccessfulTry("HelloWorld", helloTry);
         }
 
         // function fail + both FAILWRITERs fail at close (suppressed)
@@ -261,7 +269,7 @@ class TryTest {
             final Try<String> totalFailure = Try.withResources(
                     FAILWRITER::new,
                     FAILWRITER::new,
-                    (s1,s2) -> {
+                    (s1, s2) -> {
                         throw new IOException( MSG_EX_FN );
                     } );
 
@@ -332,7 +340,7 @@ class TryTest {
 
         // exception in predicate class leads to failed try
         assertException( ArithmeticException.class, TRY_SUCCESS.filter(
-                (s) -> {throw new ArithmeticException( "Arithmetic error In Predicate!" );},
+                (s) -> {throw new ArithmeticException( "Arithmetic value In Predicate!" );},
                 IOException::new
         ) );
 
@@ -545,18 +553,18 @@ class TryTest {
         assertDoesNotThrow( () -> TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply, x -> null ) );
         assertException( NullPointerException.class, TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply, x -> null ) );
         assertException( ArithmeticException.class, TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply,
-                x -> { throw new ArithmeticException("Bad Math");} ) );
+                x -> {throw new ArithmeticException( "Bad Math" );} ) );
         assertException( ArithmeticException.class, TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply,
-                x ->  Try.ofFailure( new ArithmeticException("Bad Math 2")) ) );
+                x -> Try.ofFailure( new ArithmeticException( "Bad Math 2" ) ) ) );
         // fail -> success (!), same type
         assertEquals(
                 Try.ofSuccess( "Fail2Success" ),
-                TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply, x -> Try.ofSuccess( "Fail2Success" ))
-                );
+                TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply, x -> Try.ofSuccess( "Fail2Success" ) )
+        );
         // fail -> success (!), different type
         assertEquals(
                 Try.ofSuccess( 31415 ),
-                TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply, x -> Try.ofSuccess( 31415 ))
+                TRY_FAILURE.biFlatMap( STRING_2_INT_FM::apply, x -> Try.ofSuccess( 31415 ) )
         );
     }
 
@@ -599,6 +607,88 @@ class TryTest {
         //
         assertEquals( MSG_SUCCESS, TRY_SUCCESS.orElseGet( () -> "Hello" ) );
         assertEquals( "Hello", TRY_FAILURE.orElseGet( () -> "Hello" ) );
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void and() {
+        assertThrows( NullPointerException.class, () -> TRY_FAILURE.and( (Try) null ) );
+        assertThrows( NullPointerException.class, () -> TRY_SUCCESS.and( (Try) null ) );
+        //
+        assertEquals( TRY_FAILURE, TRY_FAILURE.and( TRY_FAILURE_INT ) );
+        assertEquals( TRY_FAILURE_INT, TRY_SUCCESS.and( TRY_FAILURE_INT ) );
+    }
+
+    @Test
+    void andSupplied() {
+        assertThrows( NullPointerException.class,
+                () -> TRY_FAILURE.and( (ExSupplier<Try<String>>) null ) );
+        assertThrows( NullPointerException.class,
+                () -> TRY_SUCCESS.and( (ExSupplier<Try<String>>) null ) );
+        // ensure supplier not called
+        assertEquals( TRY_FAILURE,
+                TRY_FAILURE.and( ExSupplier.from( neverSupplier() ) )
+        );
+
+        // ensure exceptions in supplier are caught and a failure is created
+        assertEquals(
+                Try.ofFailure( FAILURE_AE ),
+                TRY_SUCCESS.and( () -> {throw FAILURE_AE;} )
+        );
+
+        // ensure supplier that doesn't fail results in a try of some sort
+        assertEquals(
+                Try.ofSuccess( "nextSuccessfulTry" ),
+                TRY_SUCCESS.and( () -> Try.ofSuccess( "nextSuccessfulTry" ) )
+        );
+
+        assertEquals(
+                Try.ofFailure( IOE ),
+                TRY_SUCCESS.and( () -> Try.ofFailure( IOE ) )
+        );
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void or() {
+        assertThrows( NullPointerException.class,
+                () -> TRY_FAILURE.or( (Try) null ) );
+        assertThrows( NullPointerException.class,
+                () -> TRY_SUCCESS.or( (Try) null ) );
+        //
+        // or() must return same Try<T> type
+        assertEquals( Try.ofSuccess( "Next" ), TRY_FAILURE.or( Try.ofSuccess( "Next" ) ) );
+        assertEquals( TRY_SUCCESS, TRY_SUCCESS.or( Try.ofSuccess( "Next" ) ) );
+    }
+
+
+    @Test
+    void orSupplied() {
+        assertThrows( NullPointerException.class,
+                () -> TRY_FAILURE.or( (ExSupplier<Try<String>>) null ) );
+        assertThrows( NullPointerException.class,
+                () -> TRY_SUCCESS.or( (ExSupplier<Try<String>>) null ) );
+        // ensure supplier not called
+        assertEquals( TRY_SUCCESS,
+                TRY_SUCCESS.or( ExSupplier.from( neverSupplier() ) )
+        );
+
+        // ensure exceptions in supplier are caught and a failure is created
+        assertEquals(
+                Try.ofFailure( FAILURE_AE ),
+                TRY_FAILURE.or( () -> {throw FAILURE_AE;} )
+        );
+
+        // ensure supplier that doesn't fail results in a try of some sort
+        assertEquals(
+                Try.ofSuccess( "nextSuccessfulTry" ),
+                TRY_FAILURE.or( () -> Try.ofSuccess( "nextSuccessfulTry" ) )
+        );
+
+        assertEquals(
+                Try.ofFailure( IOE ),
+                TRY_FAILURE.or( () -> Try.ofFailure( IOE ) )
+        );
     }
 
 
@@ -691,22 +781,18 @@ class TryTest {
         int div = 1;
         final Try<Integer> integerTry = Try.of(
                 () -> {
-                    System.out.println( "beginnign a codeblock" );
                     int i = 318794;
                     i = i / Random.from( RandomGenerator.getDefault() ).nextInt();
                     i = i / div;
-                    System.out.println( "ending code block Ok" );
                     return i;
                 }
         );
 
         final Try<Empty> asdf = Try.of(
                 () -> {
-                    System.out.println( "beginnign a codeblock" );
                     int i = 318794;
                     i = i / Random.from( RandomGenerator.getDefault() ).nextInt();
                     i = i / div;
-                    System.out.println( "ending code block Ok" );
                     return Empty.getInstance();
                 }
         );

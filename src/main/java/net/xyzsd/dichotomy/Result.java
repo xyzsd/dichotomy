@@ -68,7 +68,7 @@ import static java.util.Objects.requireNonNull;
  * {@link Result}, and can wrap methods producing checked or unchecked {@link Exception}s.
  *
  * @param <V> The Success type.
- * @param <E> THe Failure (error) type. Does not have to be an Exception.
+ * @param <E> THe Failure (value) type. Does not have to be an Exception.
  */
 public sealed interface Result<V, E> {
 
@@ -113,7 +113,7 @@ public sealed interface Result<V, E> {
      *     non-{@code null} values are failure) use {@link #swap()}, as follows:
      *     <pre>
      *         {@code
-     *              // Lets say RuntimeException is the error type
+     *              // Lets say RuntimeException is the value type
      *              Result<None, RuntimeException> result = Result.ofNullable(myValue).swap();
      *         }
      *     </pre>
@@ -139,7 +139,7 @@ public sealed interface Result<V, E> {
      *     If the opposite behavior is desired ({@code null} is successful, and
      *     non-{@code null} values are failure) use {@link #swap()}, as follows:
      *     {@snippet :
-     *              // Lets say RuntimeException is the error type
+     *              // Lets say RuntimeException is the value type
      *              Optional<RuntimeException> myValue = someFunction();
      *              Result<None, RuntimeException> result = Result.ofOK(myValue).swap();
      *     }
@@ -177,7 +177,7 @@ public sealed interface Result<V, E> {
 
     /**
      * If this is an {@link Err}, return {@code true}.
-     * @return true if this is an error result.
+     * @return true if this is an value result.
      */
     boolean isErr();
 
@@ -226,7 +226,7 @@ public sealed interface Result<V, E> {
      *
      * @param okMapper  the mapping function for {@link OK} values.
      * @param errMapper the mapping function for {@link Err} values.
-     * @param <E2>      type of the error,  which can be different from the original type
+     * @param <E2>      type of the value,  which can be different from the original type
      * @param <V2>      type of the value,  which can be different from the original type
      * @return the {@link Result} produced from {@code okMapper} or {@code errMapper}
      * @throws NullPointerException if the called function returns {@code null}.
@@ -243,7 +243,7 @@ public sealed interface Result<V, E> {
      *
      * @param fnOK  the mapping function for {@link Err} values.
      * @param fnErr the mapping function for {@link OK} values.
-     * @param <E2>      type of the error,  which can be different from the original type
+     * @param <E2>      type of the value,  which can be different from the original type
      * @param <V2>      type of the value,  which can be different from the original type
      * @return the {@link Result} produced from {@code fnOK} or {@code fnErr}
      * @throws NullPointerException if the called function returns {@code null}.
@@ -417,7 +417,7 @@ public sealed interface Result<V, E> {
     @NotNull V orElse(@NotNull Supplier<? extends V> okSupplier);
 
     /**
-     * Recover from an error; ignore the {@link Err} value if present,
+     * Recover from an value; ignore the {@link Err} value if present,
      * and apply the mapping function to get an {@link OK}.
      * <p>
      * If this is an {@link OK}, return it without applying the mapping function.
@@ -481,7 +481,7 @@ public sealed interface Result<V, E> {
      *}
      *
      * @param errMapper the mapping function producing a new {@link Err} value.
-     * @param <E2>      type of the error,  which can be different from the original type
+     * @param <E2>      type of the value,  which can be different from the original type
      * @return a new {@link Err} produced by the mapping function if this is {@link Err};
      * otherwise, returns an {@link OK}.
      * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
@@ -502,7 +502,7 @@ public sealed interface Result<V, E> {
      * </p>
      *
      * @param errMapper the mapping function that produces a new {@link Result}
-     * @param <E2>      type of the error,  which can be different from the original type
+     * @param <E2>      type of the value,  which can be different from the original type
      * @return a new {@link Err} produced by the mapping function if this is {@link Err};
      * otherwise, returns an {@link OK}.
      * @throws NullPointerException if any argument is null, or if the called action returns {@code null}.
@@ -615,7 +615,7 @@ public sealed interface Result<V, E> {
      * The next {@link Result}  can have a different parameterized {@link Err} type.
      *
      * @param nextResult The {@link Result} to return.
-     * @param <E2>       type of the error,
+     * @param <E2>       type of the value,
      *                   which can be different from the original type
      * @see #or(Supplier)
      * @see #and(Result)
@@ -630,7 +630,7 @@ public sealed interface Result<V, E> {
      * The next {@link Result} can have a different parameterized {@link Err} type.
      *
      * @param nextResultSupplier The supplier of a {@link Result} to return; only called if {@code this} is {@link Err}.
-     * @param <E2>               type of the error,
+     * @param <E2>               type of the value,
      *                           which can be different from the original type
      * @throws NullPointerException if the supplier is called and returns {@code null}.
      * @see #or(Result)
@@ -697,7 +697,7 @@ public sealed interface Result<V, E> {
      * }
      * </pre>
      * <p>
-     * If the exception type does not wrap a given error type:
+     * If the exception type does not wrap a given value type:
      * {@code
      * fileResult.orThrow((err) -> new MyException());
      * }
@@ -947,9 +947,9 @@ public sealed interface Result<V, E> {
         }
 
 
-        // For types where the error type is unchanged and exists, but the generic type of the value differs
+        // For types where the value type is unchanged and exists, but the generic type of the value differs
         // just cast and return. Types are erased so there is no need to create a new object.
-        // The value stays the same, only the empty error signature changes
+        // The value stays the same, only the empty value signature changes
         @SuppressWarnings("unchecked")
         @NotNull
         private <E2> Result<V, E2> coerce() {
@@ -960,19 +960,19 @@ public sealed interface Result<V, E> {
     /**
      * Error Result.
      *
-     * @param error Error value
+     * @param value Error value
      * @param <V>   OK type
      * @param <E>   Error type
      */
-    record Err<V, E>(@NotNull E error) implements Result<V, E> {
+    record Err<V, E>(@NotNull E value) implements Result<V, E> {
 
         /**
          * Create an OK with the given non-null value.
          *
-         * @param error OK Value
+         * @param value OK Value
          */
         public Err {
-            requireNonNull( error, "Err: error cannot be null!" );
+            requireNonNull( value, "Err: value cannot be null!" );
         }
 
 
@@ -982,7 +982,7 @@ public sealed interface Result<V, E> {
          * @return unwrapped Err E
          */
         public @NotNull E get() {
-            return error;
+            return value;
         }
 
 
@@ -1003,19 +1003,19 @@ public sealed interface Result<V, E> {
 
         @Override
         public @NotNull Optional<E> err() {
-            return Optional.of( error );
+            return Optional.of( value );
         }
 
         @Override
         public @NotNull Result<E, V> swap() {
-            return new OK<>( error );
+            return new OK<>( value );
         }
 
         @Override
         public @NotNull Result<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer) {
             requireNonNull( okConsumer );
             requireNonNull( errConsumer );
-            errConsumer.accept( error );
+            errConsumer.accept( value );
             return this;
         }
 
@@ -1023,7 +1023,7 @@ public sealed interface Result<V, E> {
         public @NotNull <V2, E2> Result<V2, E2> biMap(@NotNull Function<? super V, ? extends V2> okMapper, @NotNull Function<? super E, ? extends E2> errMapper) {
             requireNonNull( okMapper );
             requireNonNull( errMapper );
-            return new Err<>( errMapper.apply( error ) );
+            return new Err<>( errMapper.apply( value ) );
         }
 
         @SuppressWarnings("unchecked")
@@ -1031,14 +1031,14 @@ public sealed interface Result<V, E> {
         public @NotNull <V2, E2> Result<V2, E2> biFlatMap(@NotNull Function<? super V, ? extends Result<? extends V2, ? extends E2>> okMapper, @NotNull Function<? super E, ? extends Result<? extends V2, ? extends E2>> errMapper) {
             requireNonNull( okMapper );
             requireNonNull( errMapper );
-            return (Result<V2, E2>) requireNonNull( errMapper.apply( error ) );
+            return (Result<V2, E2>) requireNonNull( errMapper.apply( value ) );
         }
 
         @Override
         public <T> @NotNull T fold(@NotNull Function<? super V, ? extends T> fnOK, @NotNull Function<? super E, ? extends T> fnErr) {
             requireNonNull( fnOK );
             requireNonNull( fnErr );
-            return requireNonNull( fnErr.apply( error ) );
+            return requireNonNull( fnErr.apply( value ) );
         }
 
         @Override
@@ -1098,62 +1098,62 @@ public sealed interface Result<V, E> {
         @Override
         public @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V) {
             requireNonNull( fnE2V );
-            return requireNonNull( fnE2V.apply( error ) );
+            return requireNonNull( fnE2V.apply( value ) );
         }
 
         @Override
         public @NotNull Stream<E> streamErr() {
-            return Stream.of( error );
+            return Stream.of( value );
         }
 
         @Override
         public @NotNull Result<V, E> matchErr(@NotNull Consumer<? super E> errConsumer) {
             requireNonNull( errConsumer );
-            errConsumer.accept( error );
+            errConsumer.accept( value );
             return this;
         }
 
         @Override
         public @NotNull <E2> Result<V, E2> mapErr(@NotNull Function<? super E, ? extends E2> errMapper) {
             requireNonNull( errMapper );
-            return new Err<>( errMapper.apply( error ) );
+            return new Err<>( errMapper.apply( value ) );
         }
 
         @SuppressWarnings("unchecked")
         @Override
         public @NotNull <E2> Result<V, E2> flatMapErr(@NotNull Function<? super E, ? extends Result<? extends V, ? extends E2>> errMapper) {
             requireNonNull( errMapper );
-            return (Result<V, E2>) requireNonNull( errMapper.apply( error ) );
+            return (Result<V, E2>) requireNonNull( errMapper.apply( value ) );
         }
 
         @Override
         public boolean ifPredicateErr(@NotNull Predicate<E> errPredicate) {
             requireNonNull( errPredicate );
-            return errPredicate.test( error );
+            return errPredicate.test( value );
         }
 
         @Override
         public boolean containsErr(@Nullable E errValue) {
             requireNonNull( errValue );
-            return Objects.equals( error, errValue );
+            return Objects.equals( value, errValue );
         }
 
         @Override
         public @NotNull E orElseErr(@NotNull E errAlternate) {
             requireNonNull( errAlternate );
-            return error;
+            return value;
         }
 
         @Override
         public @NotNull E orElseErr(@NotNull Supplier<? extends E> errSupplier) {
             requireNonNull( errSupplier );
-            return error;
+            return value;
         }
 
         @Override
         public @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E) {
             requireNonNull( fnV2E );
-            return error;
+            return value;
         }
 
         @Override
@@ -1183,22 +1183,22 @@ public sealed interface Result<V, E> {
         @Override
         public @NotNull V expect() throws RuntimeException {
             // TODO: when pattern-switch is out of preview, convert this code
-            if (error instanceof RuntimeException e) {
+            if (value instanceof RuntimeException e) {
                 throw e;
-            } else if (error instanceof Throwable t) {
+            } else if (value instanceof Throwable t) {
                 throw new NoSuchElementException( t );
             } else {
-                throw new NoSuchElementException( String.valueOf( error ) );
+                throw new NoSuchElementException( String.valueOf( value ) );
             }
         }
 
         @Override
         public <X extends Exception> @NotNull V getOrThrow(@NotNull Function<E, X> exFn) throws X {
             requireNonNull( exFn );
-            throw requireNonNull( exFn.apply( error ) );
+            throw requireNonNull( exFn.apply( value ) );
         }
 
-        // For types where the error type is unchanged and exists, but the generic type of the value differs
+        // For types where the value type is unchanged and exists, but the generic type of the value differs
         // just cast and return. Types are erased so there is no need to create a new object.
         // The Error stays the same; only the empty value signature changes
         @SuppressWarnings("unchecked")

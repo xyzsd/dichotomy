@@ -42,9 +42,8 @@ import static java.util.Objects.requireNonNull;
  *
  * <p>
  * If a null argument is supplied to a method (unless explicitly marked @Nullable), an exception (NPE) will be thrown.
- * If a method which takes a Supplier or Function (or their checked equivalents, such as {@link ExSupplier} or
- * {@link ExFunction} returns {@code null}, the {@code NullPointerException} will be caught and returned as a
- * {@link Failure}.
+ * If a method which takes an {@link ExConsumer}, {@link ExSupplier}, or {@link ExFunction} returns {@code null},
+ * the {@code NullPointerException} will be caught and returned as a {@link Failure}.
  *
  *
  *
@@ -200,7 +199,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      *
      * @param fnSuccess the mapping function for {@link Success} values.
      * @param fnFailure the mapping function for {@link Failure} values.
-     * @param <V2> returned type, which can be different than the original type
+     * @param <V2> returned type, which can be different from the original type
      * @return the {@link Try} produced from {@code fnSuccess} or {@code fnFailure}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #map(ExFunction)
@@ -300,7 +299,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * </p>
      *
      * @param fnSuccess the mapping function producing a new {@link Success} value.
-     * @param <V2> returned type, which can be different than the original type
+     * @param <V2> returned type, which can be different from the original type
      * @return a new {@link Success} produced by the mapping function, if applied.
      */
     @NotNull <V2> Try<V2> map(@NotNull ExFunction<? super V, ? extends V2> fnSuccess);
@@ -333,7 +332,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      *
      * @param fnSuccess the mapping function for {@link Success} values.
      * @param fnFailure the mapping function for {@link Failure} values.
-     * @param <V2> returned type, which can be different than the original type
+     * @param <V2> returned type, which can be different from the original type
      * @return the {@link Try} produced from {@code okMapper} or {@code errMapper}, or a {@link Failure} if an Exception is caught.
      * @see #map(ExFunction)
      * @see #mapErr(ExFunction)
@@ -357,7 +356,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * </p>
      *
      * @param fnSuccess the mapping function that produces a new {@link Try}
-     * @param <V2> returned type, which can be different than the original type
+     * @param <V2> returned type, which can be different from the original type
      * @return a new {@link Try} produced by the mapping function, if applied
      * @see #flatMapErr(ExFunction)
      * @see #biFlatMap(ExFunction, ExFunction)
@@ -462,6 +461,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * @return this or the supplied Try
      */
     default @NotNull <V2> Try<V2> and(@NotNull final ExSupplier<Try<V2>> nextTrySupplier) {
+        requireNonNull( nextTrySupplier );
         return flatMap( v -> nextTrySupplier.get() );
     }
 
@@ -492,6 +492,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
      * @return this or the supplied Try
      */
     default @NotNull Try<V> or(@NotNull ExSupplier<Try<V>> nextTrySupplier) {
+        requireNonNull( nextTrySupplier );
         return flatMapErr( t -> nextTrySupplier.get() );
     }
 
@@ -500,7 +501,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
 
 
     /**
-     * Recover from an error; ignore the {@link Failure} value if present,
+     * Recover from an value; ignore the {@link Failure} value if present,
      * and apply the mapping function to get an {@link Success}.
      * <p>
      * If this is an {@link Success}, return it without applying the mapping function.
@@ -569,8 +570,6 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Internal helper methods
-    // ... if functions with greater arity are added later, consider moving these to ExFunction itself
-    //     or perhaps use an apply with variable-length input & rawtypes (?)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static <IN, OUT> Try<OUT> mapChecked(IN in, ExFunction<? super IN, ? extends OUT> fn) {
         try {
@@ -623,7 +622,6 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
          */
         public static Success<Empty> of() {
             return new Success<>( Empty.getInstance() );
-
         }
 
         /**
@@ -808,7 +806,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
     /**
      * A Failed Try, which holds a single Throwable.
      *
-     * @param err error value
+     * @param err value value
      * @param <T> success value type (success value is always empty for Failures)
      */
     record Failure<T>(@NotNull Throwable err) implements Try<T> {
@@ -824,8 +822,8 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
 
         /**
          * Create an Unsuccessful Try. This will never permit 'fatal' exceptions (see documentation for {@link Try}).
-         * @param t error value
-         * @return {@code Try.Failure} containing the error value.
+         * @param t value value
+         * @return {@code Try.Failure} containing the value value.
          * @param <U> Success value type (always empty)
          */
         public static <U> Failure<U> of(@NotNull Throwable t) {
@@ -996,7 +994,7 @@ public sealed interface Try<V> permits Try.Failure, Try.Success {
         }
 
         /**
-         * Throwables which are truly fatal that we will not capture.
+         * For Throwables which are truly fatal, we will not capture.
          */
         private static void throwIfFatal(final Throwable t) {
             // TODO: add MatchException when we target JDK > 20

@@ -57,7 +57,7 @@ public interface ExBiFunction<T, U, R> {
      * @param <V> returned type
      * @throws NullPointerException if after is null.
      */
-    default <V> ExBiFunction<T,U,V> andThen(ExFunction<? super R,? extends V> after) {
+    default <V> ExBiFunction<T,U,V> andThen(ExFunction<? super R,? extends V> after)  {
         requireNonNull(after);
         return (t,u) -> after.apply(apply(t, u));
     }

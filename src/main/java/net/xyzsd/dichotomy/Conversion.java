@@ -1,13 +1,7 @@
 package net.xyzsd.dichotomy;
 
-import net.xyzsd.dichotomy.Either;
-import net.xyzsd.dichotomy.Result;
 import net.xyzsd.dichotomy.trying.Try;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 
 /**

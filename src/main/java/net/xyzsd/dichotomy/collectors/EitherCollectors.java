@@ -26,7 +26,7 @@ public interface EitherCollectors {
 
 
     /**
-     * A left-biased collector of Eithers.
+     * A left-biased collector of {@link Either}s.
      * <p>
      *     This will return right values iff there are no left values, and
      *     at least one right value is present.
@@ -45,7 +45,7 @@ public interface EitherCollectors {
     }
 
     /**
-     * A right-biased collector of Eithers.
+     * A right-biased collector of {@link Either}s.
      * <p>
      *     This will return Left values iff there are no right values
      *     and at least a single left value is present.
@@ -64,7 +64,7 @@ public interface EitherCollectors {
     }
 
     /**
-     * An unbiased collector of Eithers.
+     * An unbiased collector of {@link Either}s.
      * <p>
      *     This will return <b>both</b> Left and Right values
      * </p>
@@ -83,9 +83,13 @@ public interface EitherCollectors {
 
 
     static private <L, R> void add(Accumulator<R, L> listBox, Either<L, R> either) {
-        switch (either) {
-            case Either.Left<L, R> left -> listBox.errList.add( left.value() );
-            case Either.Right<L, R> right -> listBox.okList.add( right.value() );
+        // TODO: use switch/case when we support JDK > 20
+        if(either instanceof Either.Right<L,R> right) {
+            listBox.okList.add( right.value() );
+        } else if(either instanceof Either.Left<L,R> left) {
+            listBox.errList.add( left.value() );
+        } else {
+            throw new IllegalStateException();
         }
     }
 

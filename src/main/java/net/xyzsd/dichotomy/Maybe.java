@@ -62,7 +62,7 @@ public sealed interface Maybe<T> {
     /**
      * Perform an action depending on whether the {@link Maybe} is a {@link Some} or a {@link None}.
      * <p>
-     * This is analagous to {@link java.util.Optional#ifPresentOrElse(Consumer, Runnable)}
+     * This is analogous to {@link java.util.Optional#ifPresentOrElse(Consumer, Runnable)}
      *
      * @param someConsumer action performed if {@link Some}
      * @param noneRunner   action performed if {@link None}
@@ -389,7 +389,7 @@ public sealed interface Maybe<T> {
     /**
      * The empty {@link Maybe}.
      * <p>
-     * This None has a type (unliked net.xyzsd.dichotomy.None), but the type is always coerced to the needed type.
+     * This None has a type which s always coerced to the needed type.
      *
      * @param <T> value type
      */
