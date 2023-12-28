@@ -24,7 +24,7 @@ dependencies {
 
 java { 
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(20))
+        languageVersion.set(JavaLanguageVersion.of(21))
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 
@@ -121,7 +121,7 @@ tasks.javadoc {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
     val javadocOptions = options as CoreJavadocOptions
-    javadocOptions.addStringOption("source", "20")
+    javadocOptions.addStringOption("source", "21")
 }
 
 // for reproducible builds
