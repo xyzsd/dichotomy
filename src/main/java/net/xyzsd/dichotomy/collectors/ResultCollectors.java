@@ -82,13 +82,9 @@ public interface ResultCollectors {
 
 
     static private <OK, ERR> void add(Accumulator<OK, ERR> listBox, Result<OK, ERR> result) {
-        // TODO: use switch/case when we support JDK > 20
-        if(result instanceof Result.OK<OK, ERR> ok) {
-            listBox.okList.add( ok.value() );
-        } else if(result instanceof Result.Err<OK, ERR> err) {
-            listBox.errList.add( err.value() );
-        } else {
-            throw new IllegalStateException();
+        switch(result) {
+            case Result.OK(OK v) -> listBox.okList.add( v );
+            case Result.Err(ERR e) -> listBox.errList.add( e );
         }
     }
 

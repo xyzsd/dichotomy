@@ -1182,13 +1182,10 @@ public sealed interface Result<V, E> {
 
         @Override
         public @NotNull V expect() throws RuntimeException {
-            // TODO: when pattern-switch is out of preview, convert this code
-            if (value instanceof RuntimeException e) {
-                throw e;
-            } else if (value instanceof Throwable t) {
-                throw new NoSuchElementException( t );
-            } else {
-                throw new NoSuchElementException( String.valueOf( value ) );
+            switch(value) {
+                case RuntimeException e -> throw e;
+                case Throwable t -> throw new NoSuchElementException(t);
+                default -> throw new NoSuchElementException( String.valueOf( value ) );
             }
         }
 
@@ -1198,7 +1195,7 @@ public sealed interface Result<V, E> {
             throw requireNonNull( exFn.apply( value ) );
         }
 
-        // For types where the value type is unchanged and exists, but the generic type of the value differs
+        // For types where the value type is unchanged and exists, but the generic type of the value differs,
         // just cast and return. Types are erased so there is no need to create a new object.
         // The Error stays the same; only the empty value signature changes
         @SuppressWarnings("unchecked")

@@ -565,4 +565,45 @@ class ResultTest {
                 MTEST_ERR.flatMapErr( s -> hundredMore.apply( s ).flatMapErr( square ) )
         );
     }
+
+    @Test
+    void highlyContrivedAndNotVeryGoodExamples() {
+        // OK: first example
+        final Result<Double, String> firstResult = Result.<Integer, String>ofOK( 3828 )  // returns an OK<Integer>
+                .map( x -> x * 10.0 )        // map to float, after multiplying x 10
+                .match( System.out::println )     // print "38280.0" to console
+                .matchErr( System.err::println );// ignored, as this is an OK
+
+        // prints 'value ok!'
+        switch(firstResult) {
+            case OK<Double,String> ok -> System.out.println("value ok! value: "+ok.value());
+            case Err<Double,String> err -> System.err.println(err.value());
+        }
+
+        // prints 'positive'
+        switch(firstResult) {
+            case OK(Double x) when x > 0 -> System.out.println("positive");
+            case OK(Double x) -> System.out.println("0 or negative");
+            case Err(String s) -> System.err.println(s);
+        }
+
+        // Err: second example
+        Result<Double,String> errResult = Result.<Integer, String>ofErr("Insufficient entropy")
+                .map(x -> x*10.0 )       // ignored, as this is an Err
+                .match(System.out::println)     // ignored, as this is an Err
+                .matchErr(System.err::println);  // "Insufficient entropy" printed to System.err
+
+        // prints 'ERROR: Insufficient entropy'
+        switch(errResult) {
+            case OK<Double,String> ok -> System.out.println("value ok! value: "+ok.value());
+            case Err<Double,String> err -> System.err.printf("ERROR: %s\n", err.value());
+        }
+
+        // prints 'ERROR: Insufficient entropy'
+        switch(errResult) {
+            case OK(Double x) when x > 0 -> System.out.println("positive");
+            case OK(Double x) -> System.out.println("0 or negative");
+            case Err(String s) -> System.err.printf("ERROR: %s\n", s);
+        }
+    }
 }

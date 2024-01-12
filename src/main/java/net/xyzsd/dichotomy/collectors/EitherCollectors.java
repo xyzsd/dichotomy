@@ -83,13 +83,9 @@ public interface EitherCollectors {
 
 
     static private <L, R> void add(Accumulator<R, L> listBox, Either<L, R> either) {
-        // TODO: use switch/case when we support JDK > 20
-        if(either instanceof Either.Right<L,R> right) {
-            listBox.okList.add( right.value() );
-        } else if(either instanceof Either.Left<L,R> left) {
-            listBox.errList.add( left.value() );
-        } else {
-            throw new IllegalStateException();
+        switch(either) {
+            case Either.Right(R r) -> listBox.okList.add( r );
+            case Either.Left(L l) -> listBox.errList.add( l );
         }
     }
 

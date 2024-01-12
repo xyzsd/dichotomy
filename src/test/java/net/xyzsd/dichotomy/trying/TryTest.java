@@ -1,9 +1,11 @@
 package net.xyzsd.dichotomy.trying;
 
-import net.xyzsd.dichotomy.Empty;
 import net.xyzsd.dichotomy.TestUtils.SingleUseConsumer;
+import net.xyzsd.dichotomy.trying.Try.Failure;
+import net.xyzsd.dichotomy.trying.Try.Success;
 import net.xyzsd.dichotomy.trying.function.ExConsumer;
 import net.xyzsd.dichotomy.trying.function.ExFunction;
+import net.xyzsd.dichotomy.trying.function.ExRunnable;
 import net.xyzsd.dichotomy.trying.function.ExSupplier;
 import org.junit.jupiter.api.Test;
 
@@ -82,9 +84,9 @@ class TryTest {
     private static void assertMessage(final String expectedText, Try<?> tried) {
         requireNonNull( expectedText );
         requireNonNull( tried );
-        if (tried instanceof Try.Success<?>) {
+        if (tried instanceof Success<?>) {
             throw new AssertionError( "Expected Failure, not " + tried );
-        } else if (tried instanceof Try.Failure<?> failure) {
+        } else if (tried instanceof Failure<?> failure) {
             if (!Objects.equals( expectedText, failure.err().getMessage() )) {
                 throw new AssertionError( String.format( "Expected '%s' Actual: '%s'",
                         expectedText,
@@ -101,9 +103,9 @@ class TryTest {
         requireNonNull( exceptionClass );
         requireNonNull( tried );
 
-        if (tried instanceof Try.Success<?>) {
+        if (tried instanceof Success<?>) {
             throw new AssertionError( "Expected Failure, not " + tried );
-        } else if (tried instanceof Try.Failure<?> failure) {
+        } else if (tried instanceof Failure<?> failure) {
             if (!Objects.equals( exceptionClass, failure.err().getClass() )) {
                 throw new AssertionError( String.format( "Expected class '%s' Actual: '%s'",
                         exceptionClass.getClass(),
@@ -120,9 +122,9 @@ class TryTest {
         if (nSuppressed < 0) {throw new IllegalArgumentException();}
         requireNonNull( tried );
 
-        if (tried instanceof Try.Success<?>) {
+        if (tried instanceof Success<?>) {
             throw new AssertionError( "Expected Failure, not " + tried );
-        } else if (tried instanceof Try.Failure<?> failure) {
+        } else if (tried instanceof Failure<?> failure) {
             if (nSuppressed != failure.err().getSuppressed().length) {
                 throw new AssertionError( String.format( "Expected %d suppressed exceptions; actual count: %d: %s",
                         nSuppressed,
@@ -136,7 +138,7 @@ class TryTest {
     }
 
     private static void assertSuccessfulTry(String expectedValue, Try<String> in) {
-        if(in instanceof Try.Success<String> success) {
+        if (in instanceof Success<String> success) {
             assertEquals( expectedValue, success.value() );
         } else {
             throw new AssertionError();
@@ -149,15 +151,15 @@ class TryTest {
         // test simple suppliers
         {
             // success
-            final Try<String> stn = Try.of( STRING_SUPPLIER_OK::get );
-            assertEquals( Try.Success.class, stn.getClass() );
+            final Try<String> stn = Try.wrap( STRING_SUPPLIER_OK::get );
+            assertEquals( Success.class, stn.getClass() );
             assertTrue( stn.contains( SUPPLIED_STRING ) );
         }
 
         {
             // fail
-            final Try<String> stn = Try.of( STRING_SUPPLIER_FAIL::get );
-            assertEquals( Try.Failure.class, stn.getClass() );
+            final Try<String> stn = Try.wrap( STRING_SUPPLIER_FAIL::get );
+            assertEquals( Failure.class, stn.getClass() );
             assertFalse( stn.contains( SUPPLIED_STRING ) );
             assertMessage( RE.getMessage(), stn );
             assertSuppressed( 0, stn );
@@ -166,15 +168,15 @@ class TryTest {
         // checked suppliers
         {
             // success
-            final Try<String> stn = Try.of( EX_STRING_SUPPLIER_OK );
-            assertEquals( Try.Success.class, stn.getClass() );
+            final Try<String> stn = Try.wrap( EX_STRING_SUPPLIER_OK );
+            assertEquals( Success.class, stn.getClass() );
             assertTrue( stn.contains( SUPPLIED_STRING ) );
         }
 
         {
             // fail
-            final Try<String> stn = Try.of( EX_STRING_SUPPLIER_FAIL );
-            assertEquals( Try.Failure.class, stn.getClass() );
+            final Try<String> stn = Try.wrap( EX_STRING_SUPPLIER_FAIL );
+            assertEquals( Failure.class, stn.getClass() );
             assertFalse( stn.contains( SUPPLIED_STRING ) );
             assertMessage( IOE.getMessage(), stn );
             assertSuppressed( 0, stn );
@@ -182,8 +184,8 @@ class TryTest {
 
         {
             // fatal exceptions should be fatal
-            assertThrows( LinkageError.class, () -> Try.of( FATAL_SUPPLIER_ERROR ) );
-            assertThrows( InterruptedException.class, () -> Try.of( FATAL_SUPPLIER_EX ) );
+            assertThrows( LinkageError.class, () -> Try.wrap( FATAL_SUPPLIER_ERROR ) );
+            assertThrows( InterruptedException.class, () -> Try.wrap( FATAL_SUPPLIER_EX ) );
         }
     }
 
@@ -198,7 +200,7 @@ class TryTest {
                         return x.toString();
                     } );
 
-            assertSuccessfulTry("HelloWorld", helloTry);
+            assertSuccessfulTry( "HelloWorld", helloTry );
         }
 
         // supplier fail
@@ -261,7 +263,7 @@ class TryTest {
                         return s1.toString() + s2;
                     } );
 
-            assertSuccessfulTry("HelloWorld", helloTry);
+            assertSuccessfulTry( "HelloWorld", helloTry );
         }
 
         // function fail + both FAILWRITERs fail at close (suppressed)
@@ -284,14 +286,14 @@ class TryTest {
 
     @Test
     void isFailure() {
-        assertFalse( Try.Success.of( SUPPLIED_STRING ).isFailure() );
-        assertTrue( Try.Failure.of( IOE ).isFailure() );
+        assertFalse( Success.of( SUPPLIED_STRING ).isFailure() );
+        assertTrue( Failure.of( IOE ).isFailure() );
     }
 
     @Test
     void isSuccess() {
-        assertTrue( Try.Success.of( SUPPLIED_STRING ).isSuccess() );
-        assertFalse( Try.Failure.of( IOE ).isSuccess() );
+        assertTrue( Success.of( SUPPLIED_STRING ).isSuccess() );
+        assertFalse( Failure.of( IOE ).isSuccess() );
     }
 
 
@@ -580,9 +582,9 @@ class TryTest {
 
     @Test
     void contains() {
-        assertTrue( Try.Success.of( SUPPLIED_STRING ).contains( "SuppliedString" ) );
-        assertFalse( Try.Success.of( SUPPLIED_STRING ).contains( "randomstring#*@(#$" ) );
-        assertFalse( Try.Failure.of( IOE ).contains( "SuppliedString" ) );
+        assertTrue( Success.of( SUPPLIED_STRING ).contains( "SuppliedString" ) );
+        assertFalse( Success.of( SUPPLIED_STRING ).contains( "randomstring#*@(#$" ) );
+        assertFalse( Failure.of( IOE ).contains( "SuppliedString" ) );
         // null : allowed but always false.
         assertFalse( TRY_SUCCESS.contains( null ) );
         assertFalse( TRY_FAILURE.contains( null ) );
@@ -777,26 +779,47 @@ class TryTest {
 
 
     @Test
-    void randomstuff() {
-        int div = 1;
-        final Try<Integer> integerTry = Try.of(
-                () -> {
-                    int i = 318794;
-                    i = i / Random.from( RandomGenerator.getDefault() ).nextInt();
-                    i = i / div;
-                    return i;
+    void wrap() {
+        // example:
+        Try.wrap( () -> {
+                    int i = Random.from( RandomGenerator.getDefault() ).nextInt();
+                    if (i < 0) {
+                        throw new IOException( "oh no!" );
+                    } else {
+                        // ... do something
+                    }
                 }
         );
 
-        final Try<Empty> asdf = Try.of(
-                () -> {
-                    int i = 318794;
-                    i = i / Random.from( RandomGenerator.getDefault() ).nextInt();
-                    i = i / div;
-                    return Empty.getInstance();
-                }
+        // testing
+        assertThrows( NullPointerException.class, () -> Try.wrap( (ExRunnable) null ) );
+
+        assertEquals(
+                Try.ofFailure( IOE ),
+                Try.wrap( () -> { throw IOE; })
         );
 
-        // so above would be an int or if /0 then a failure
+        assertEquals(
+                Success.of(),
+                Try.wrap( () -> { for(int i=0; i<10; i++) { int j = 10+i; }})
+        );
+
     }
+
+
+    @Test
+    void highlyContrivedAndNotVeryGoodExamples() {
+        final Try<Integer> result = Try.ofSuccess( 777 )
+                .map( i -> i * 1000 )
+                .exec( System.out::println )      // prints "777000"
+                .map( i -> i / 0 )                 // the ArithmeticException is caught as a Try.Failure
+                .exec( System.out::println );// does not exec() because we are a Failure
+
+        // prints "ERROR: java.lang.ArithmeticException: / by zero"
+        switch(result) {
+            case Success(Integer i) -> System.out.printf("Operation completed successfully. Value: %d\n", i);
+            case Failure(Throwable t) -> System.err.printf("ERROR: %s\n", t);
+        }
+    }
+
 }
