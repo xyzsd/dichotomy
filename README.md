@@ -9,9 +9,9 @@ All types are sealed (Sum types), and can be used in `switch` expressions and wi
 pattern matching.
 
 ### `Either`:
-An general immutable type that can only be *either* one of two types. 
-The types are called `Left<L>` and `Right<R>`. By convention, the Left type 
-indicates failure, while the Right type indicates success. 
+An general immutable type that can only be *either* one of two types.
+The types are called `Left<L>` and `Right<R>`. By convention, the Left type
+indicates failure, while the Right type indicates success.
 
 ### `Result`:
 Similar to an `Either`, but with success/failure semantics more clearly defined.
@@ -73,15 +73,16 @@ Analogous to the JDK `Optional` type, but sealed so it may be used in `switch`
 statements and with pattern matching.  
 
 
-## Updates (January 2024)
-  - [x] Refactored, now with substantial improvements
-  - [x] New Try class
-  - [x] New Maybe class (analogous to Optional)
-  - [x] Near-complete test coverage
-  - [x] Improved documentation
-  - [x] Targets JDK 21
-  - [ ] Examples (still in progress) 
-  - [ ] Maven release
+## Updates 
+The 1.0 version (January 2024) has been extensively refactored 
+and improved from the original version. 
+
+Handling exceptions is substantially better with the new
+`Try` type (a specialized type of `Result`), which also
+supports the try-with-resources pattern.
+
+Some usage examples are now included... thought many more
+illustrative examples should be provded.
 
 Download
 --------
@@ -91,21 +92,24 @@ depend via Maven:
 <dependency>
   <groupId>net.xyzsd</groupId>
   <artifactId>dichotomy</artifactId>
-  <version>0.9</version>
+  <version>1.0</version>
   <type>module</type>
 </dependency>
 ```
 
 or Gradle:
 ```kotlin
-implementation("net.xyzsd:dichotomy:0.9")
+implementation("net.xyzsd:dichotomy:1.0")
 ```
 
 
 
 License
 -------
-Copyright 2022-2023, xyzsd
+Copyright 2022-2024, xyzsd
+
+Many thanks to [@fdelsert](https://github.com/fdelsert) for
+suggestions and improvements leading to the 1.0 release.
 
 Licensed under either of:
 
