@@ -61,7 +61,7 @@ publishing {
             
             pom {
                 name.set("dichotomy")
-                description.set("Either and Result monads for Java")
+                description.set("Result, Try, Maybe, and Either monads for Java")
                 url.set("https://maven.pkg.github.com/xyzsd/dichotomy")   
 
                 licenses {
