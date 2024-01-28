@@ -81,8 +81,13 @@ Handling exceptions is substantially better with the new
 `Try` type (a specialized type of `Result`), which also
 supports the try-with-resources pattern.
 
-Some usage examples are now included... thought many more
-illustrative examples should be provded.
+Some usage examples are now included... though additional
+illustrative examples should be provided!
+
+Documentation
+-------------
+[Available online][doc_online] or by [download][doc_download].
+
 
 Download
 --------
@@ -102,7 +107,7 @@ or Gradle:
 implementation("net.xyzsd:dichotomy:1.0")
 ```
 
-
+or [download](https://github.com/xyzsd/dichotomy/releases/tag/1.0) from GitHub.
 
 License
 -------
@@ -121,6 +126,6 @@ Licensed under either of:
 at your option.
 
 
-    
-    
+[doc_online]: https://javadoc.io/doc/net.xyzsd/dichotomy/1.0/index.html
+[doc_download]: https://github.com/xyzsd/dichotomy/releases/download/1.0/dichotomy-1.0-javadoc.jar
 
