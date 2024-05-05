@@ -9,7 +9,7 @@ All types are sealed (Sum types), and can be used in `switch` expressions and wi
 pattern matching.
 
 ### `Either`:
-An general immutable type that can only be *either* one of two types.
+A general immutable type that can only be *either* one of two types.
 The types are called `Left<L>` and `Right<R>`. By convention, the Left type
 indicates failure, while the Right type indicates success.
 
