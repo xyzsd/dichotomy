@@ -77,11 +77,11 @@ statements and with pattern matching.
 ### Branch 1.1 (August 2024, not yet released)
 JSR-305 nullness annotations have been replaced with JSpecify 1.0, reducing annotation clutter. 
 Note that this could potentially pose problems given 
-[issues prior to JDK 22](https://jspecify.dev/docs/whether/#annotation-processors). Note that
-runtime nullness checks (via Objects.requireNonNull) have not been removed.  
+[issues prior to JDK 22](https://jspecify.dev/docs/whether/#annotation-processors). 
+Runtime nullness checks (via Objects.requireNonNull) have not been removed.  
 
-The 1.1 branch also adds `Result::merge` which simplified reduction operations on Streams of 
-Result values (see documentation and/or tests).
+The 1.1 branch also adds `Result::merge` which simplifies reduction operations on Streams of 
+'Result's (see method documentation and tests).
 
 
 ### Release 1.0 (January 2024)
