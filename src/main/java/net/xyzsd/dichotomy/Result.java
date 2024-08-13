@@ -7,10 +7,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -365,6 +362,49 @@ public sealed interface Result<V, E> {
      */
     <V2> Result<V2, E> flatMap(Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper);
 
+
+    /**
+     * If both this {@link Result} and the {@code other} {@link Result} are both {@link OK}s,
+     * use the {@code combiner} to combine the values into a new result which is returned.
+     * <p>
+     * If either argument is an {@link Err}, an {@link Err} is returned and no values are combined.
+     * If {@code this} is the {@link Err}, then {@code this} is returned. Otherwise, {@code other} will
+     * be returned.
+     * <p>
+     * This is useful for reduction operations on {@link Result} streams.
+     * For example:
+     * {@snippet :
+     *        import net.xyzsd.dichotomy.Result;
+     *
+     *            Result<Integer, Object> finalResult = Stream.of(
+     *                Result.ofOK( 3 ),
+     *                Result.ofOK( 7 ),
+ *                    Result.ofOK( 11 )
+ *                 ).reduce(
+     *                         Result.ofOK( 0 ),
+     *                         (a, b) -> a.merge( b, Integer::sum )
+     *                 );
+     *         // finalResult: Result.ofOK(21)
+     *
+     *        // but here:
+     *         Result<Integer, String> finalResult = Stream.of(
+     *                Result.<Integer,String>ofOK( 3 ),
+     *                Result.<Integer,String>ofErr( "Could not parse integer!" ),
+     *                Result.<Integer,String>ofOK( 11 ),
+     *                Result.<Integer,String>ofErr( "Negative values not allowed!")
+     *         ).reduce(
+     *                        Result.ofOK( 0 ),
+     *                        (a, b) -> a.merge( b, Integer::sum )
+     *                 );
+     *         // finalResult: Result.ofErr("Could not parse integer!")
+     *}
+     *
+     * @param other    the {@link Result} to merge with the {@code this}
+     * @param combiner {@link BinaryOperator} which combines {@link OK} values.
+     * @return result of the combiner, or {@link Err}
+     */
+    Result<V, E> merge(Result<V, E> other, BinaryOperator<V> combiner);
+
     /**
      * Determines if this {@link OK} {@link Result} matches the given {@link Predicate}.
      * <p>
@@ -435,6 +475,7 @@ public sealed interface Result<V, E> {
      * @see #forfeit(Function)
      */
     V recover(Function<? super E, ? extends V> fnE2V);
+
 
     /**
      * Return a {@link Stream}, containing either a single {@link Err} value, or an empty {@link Stream}
@@ -833,6 +874,13 @@ public sealed interface Result<V, E> {
         }
 
         @Override
+        public Result<V, E> merge(Result<V, E> other, BinaryOperator<V> combiner) {
+            requireNonNull( other );
+            requireNonNull( combiner );
+            return other.map( otherValue -> combiner.apply( value, otherValue ) );
+        }
+
+        @Override
         public boolean ifPredicate(Predicate<V> okPredicate) {
             requireNonNull( okPredicate );
             return okPredicate.test( value );
@@ -1071,6 +1119,13 @@ public sealed interface Result<V, E> {
         public <V2> Result<V2, E> flatMap(Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper) {
             requireNonNull( okMapper );
             return coerce();
+        }
+
+        @Override
+        public Result<V, E> merge(Result<V, E> other, BinaryOperator<V> combiner) {
+            requireNonNull( other );
+            requireNonNull( combiner );
+            return this;
         }
 
         @Override
