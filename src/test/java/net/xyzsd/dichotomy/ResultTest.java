@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static net.xyzsd.dichotomy.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +26,6 @@ class ResultTest {
     //
     static final Result<String, RuntimeException> OK = Result.ofOK( OK_VALUE );
     static final Result<String, RuntimeException> ERR = Result.ofErr( ERR_VALUE );
-
 
     // standard mapping functions for testing
     static final String fnOK_VAL = "*MAPPED_STRING";
@@ -281,6 +281,45 @@ class ResultTest {
         assertEquals( ERR, ERR.flatMap( fnOK_FLAT ) );
         assertDoesNotThrow( () -> {ERR.flatMap( neverFunction() );} );
         assertThrows( NullPointerException.class, () -> OK.flatMap( x -> null ) );
+    }
+
+    @Test
+    void merge() {
+        // all OK
+        final Result<Integer, Object> result1 = Stream.of( Result.ofOK( 3 ), Result.ofOK( 7 ), Result.ofOK( 11 ) )
+                .reduce(
+                        Result.ofOK( 0 ),
+                        (a, b) -> a.merge( b, Integer::sum )
+                );
+        assertEquals( result1, Result.ofOK(21) );
+
+        // all Err
+        final Result<Integer, Integer> result2 = Stream.of(
+                        Result.<Integer,Integer>ofErr( 3 ),
+                        Result.<Integer,Integer>ofErr( 7 ),
+                        Result.<Integer,Integer>ofErr( 11 ) )
+                .reduce(
+                        Result.ofOK( 0 ),
+                        (a, b) -> a.merge( b, Integer::sum )
+                );
+        assertEquals( result2, Result.ofErr(3) );   // first error (3) returned
+
+        // mixed. mixed results in returning first encountered error.
+        // ideally we would terminate the stream on first err encounter, but we would need
+        // a gatherer for that, and then apply a terminal operation. Successive errors though
+        // are no-ops and should be performant for most use cases
+        final Result<Integer, String> result3 = Stream.of(
+                Result.<Integer,String>ofOK( 3 ),
+                Result.<Integer,String>ofOK( 11 ),
+                Result.<Integer,String>ofErr( "FIRST_ERROR" ),
+                Result.<Integer,String>ofOK( 17 ),
+                Result.<Integer,String>ofErr( "SECOND_ERROR" ) )
+                .reduce(
+                        Result.ofOK( 0 ),
+                        (a, b) -> a.merge( b, Integer::sum )
+                );
+        assertEquals( result3, Result.ofErr("FIRST_ERROR") );
+
     }
 
     @Test
