@@ -2,7 +2,7 @@ package net.xyzsd.dichotomy.collectors;
 
 
 import net.xyzsd.dichotomy.Result;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.stream.Collector;
@@ -17,6 +17,7 @@ import static java.util.Objects.requireNonNull;
  * all ok and value values encountered are included.
  * </p>
  */
+@NullMarked
 public interface ResultCollectors {
 
 
@@ -82,7 +83,7 @@ public interface ResultCollectors {
 
 
     static private <OK, ERR> void add(Accumulator<OK, ERR> listBox, Result<OK, ERR> result) {
-        switch(result) {
+        switch (result) {
             case Result.OK(OK v) -> listBox.okList.add( v );
             case Result.Err(ERR e) -> listBox.errList.add( e );
         }
@@ -92,19 +93,20 @@ public interface ResultCollectors {
     /**
      * Tuple containing lists of OK and Err values
      * <p>
-     *     Contained lists are immutable and never null, but may be empty.
+     * Contained lists are immutable and never null, but may be empty.
      * </p>
      *
-     * @param oks OK values
-     * @param errs Err values
-     * @param <OK> OK type
+     * @param oks   OK values
+     * @param errs  Err values
+     * @param <OK>  OK type
      * @param <ERR> Err type
      */
-    record OKsAndErrs<OK, ERR>(@NotNull List<OK> oks, @NotNull List<ERR> errs) {
+    record OKsAndErrs<OK, ERR>(List<OK> oks, List<ERR> errs) {
 
         /**
          * Create a OKsAndErrs
-         * @param oks OK values
+         *
+         * @param oks  OK values
          * @param errs Err values
          */
         public OKsAndErrs {

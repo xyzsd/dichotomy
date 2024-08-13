@@ -1,5 +1,7 @@
 package net.xyzsd.dichotomy;
 
+import org.jspecify.annotations.NullMarked;
+
 /**
  * {@link Void} type alternative.
  * <p>
@@ -10,6 +12,7 @@ package net.xyzsd.dichotomy;
  * Instead, the {@link Empty} type can be used.
  * </p>
  */
+@NullMarked
 public final class Empty {
 
     private static final Empty INSTANCE = new Empty();

@@ -1,7 +1,7 @@
 package net.xyzsd.dichotomy;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Value type.
  */
+@NullMarked
 public sealed interface Maybe<T> {
 
 
@@ -32,7 +33,7 @@ public sealed interface Maybe<T> {
      * @param <T>   value type
      * @return Maybe holding given value.
      */
-    static <T> Maybe<T> of(@NotNull T value) {
+    static <T> Maybe<T> of(T value) {
         return new Some<>( value );
     }
 
@@ -68,7 +69,7 @@ public sealed interface Maybe<T> {
      * @param noneRunner   action performed if {@link None}
      * @return this
      */
-    @NotNull Maybe<T> biMatch(@NotNull Consumer<? super T> someConsumer, @NotNull Runnable noneRunner);
+    Maybe<T> biMatch(Consumer<? super T> someConsumer, Runnable noneRunner);
 
     /**
      * Filter based on the given {@link Predicate}. If the Predicate is false, or this is a {@link None},
@@ -77,7 +78,7 @@ public sealed interface Maybe<T> {
      * @param predicate {@link Predicate} to test.
      * @return this or {@link None}
      */
-    @NotNull Maybe<T> filter(@NotNull Predicate<? super T> predicate);
+    Maybe<T> filter(Predicate<? super T> predicate);
 
     /**
      * Map a {@link Some} or {@link None} value to a given type.
@@ -87,7 +88,7 @@ public sealed interface Maybe<T> {
      * @param <U>     return type of both functions
      * @return result of one of the above mapping function or supplier.
      */
-    <U> @NotNull U fold(@NotNull Function<? super T, ? extends U> fnSome, @NotNull Supplier<? extends U> supNone);
+    <U> U fold(Function<? super T, ? extends U> fnSome, Supplier<? extends U> supNone);
 
     /**
      * Stream the value contained. The stream will consist of at most a single element, and
@@ -95,7 +96,7 @@ public sealed interface Maybe<T> {
      *
      * @return Stream
      */
-    @NotNull Stream<T> stream();
+    Stream<T> stream();
 
     /**
      * Map {@link Some} types. No mapping is performed if the type is {@link None}.
@@ -105,7 +106,7 @@ public sealed interface Maybe<T> {
      * @return the result of the mapping function or a {@link None}
      */
     // only maps if present
-    <U> @NotNull Maybe<U> map(@NotNull Function<? super T, ? extends U> fnSome);
+    <U> Maybe<U> map(Function<? super T, ? extends U> fnSome);
 
     /**
      * If the {@link Maybe} is a {@link Some}, call the provided {@link Consumer}. Otherwise, do nothing.
@@ -113,7 +114,7 @@ public sealed interface Maybe<T> {
      * @param someConsumer act upon the given {@link Some} value
      * @return this
      */
-    Maybe<T> match(@NotNull Consumer<? super T> someConsumer);
+    Maybe<T> match(Consumer<? super T> someConsumer);
 
     /**
      * If the {@link Maybe} is a {@link Some}, call the provided {@link Consumer}. Otherwise, do nothing.
@@ -123,7 +124,7 @@ public sealed interface Maybe<T> {
      *
      * @param someConsumer act upon the given {@link Some} value
      */
-    void consume(@NotNull Consumer<? super T> someConsumer);
+    void consume(Consumer<? super T> someConsumer);
 
     /**
      * If a value is present ({@link Some}), return the result of applying the given mapping function to the value,
@@ -135,7 +136,7 @@ public sealed interface Maybe<T> {
      * @param <U>    type of {@link Maybe} returned.
      * @return result of mapping, or {@link None}
      */
-    <U> @NotNull Maybe<U> flatMap(@NotNull Function<? super T, ? extends Maybe<? extends U>> mapper);
+    <U> Maybe<U> flatMap(Function<? super T, ? extends Maybe<? extends U>> mapper);
 
     /**
      * Terminal operation which tests a {@link Some} value against the given {@link Predicate}.
@@ -143,12 +144,12 @@ public sealed interface Maybe<T> {
      * This is functionally equivalent to:
      * {@snippet :
      *  filter(Predicate).hasSome()
-     * }
+     *}
      *
      * @param predicate {@link Predicate} to test
      * @return result of predicate testing
      */
-    boolean matches(@NotNull Predicate<T> predicate);
+    boolean matches(Predicate<T> predicate);
 
     /**
      * Returns {@code true} if {@code value} equals the value contained in a {@link Some}.
@@ -182,7 +183,7 @@ public sealed interface Maybe<T> {
      * @param alternate used if this is {@link None}
      * @return this or the given Maybe
      */
-    @NotNull T orElse(@NotNull T alternate);
+    T orElse(T alternate);
 
     /**
      * If this is a {@link Some}, return it. Otherwise, use the provided alternate value.
@@ -191,7 +192,7 @@ public sealed interface Maybe<T> {
      * @param supplier, used if this is {@link None}
      * @return this or the supplied Maybe
      */
-    @NotNull T orElse(@NotNull Supplier<? extends T> supplier);
+    T orElse(Supplier<? extends T> supplier);
 
     /**
      * Get the next {@link Maybe}, but only if the current {@link Maybe} is a {@link Some}.
@@ -201,7 +202,7 @@ public sealed interface Maybe<T> {
      * @param <U>       type of Maybe returned
      * @return this or the given Maybe
      */
-    <U> @NotNull Maybe<U> and(@NotNull Maybe<? extends U> nextMaybe);
+    <U> Maybe<U> and(Maybe<? extends U> nextMaybe);
 
     /**
      * Get the next {@link Maybe}, but only if the current {@link Maybe} is a {@link Some}.
@@ -211,7 +212,7 @@ public sealed interface Maybe<T> {
      * @param <U>               type of Maybe returned
      * @return this or the supplied Maybe
      */
-    <U> @NotNull Maybe<U> and(@NotNull Supplier<Maybe<? extends U>> nextMaybeSupplier);
+    <U> Maybe<U> and(Supplier<Maybe<? extends U>> nextMaybeSupplier);
 
     /**
      * If this is a {@link Some}, return it. Otherwise, return {@code nextMaybe}.
@@ -219,15 +220,15 @@ public sealed interface Maybe<T> {
      * @param nextMaybe the next Maybe
      * @return nextMaybe (returned if this is a {@link None}
      */
-    @NotNull Maybe<T> or(@NotNull Maybe<T> nextMaybe);
+    Maybe<T> or(Maybe<T> nextMaybe);
 
     /**
      * If this is a {@link Some}, return it. Otherwise, return the maybe via the provided {@link Supplier}.
      *
      * @param nextMaybeSupplier supplier of the next Maybe
-     * @return  nextMaybeSupplier (invoked if this is a {@link None}
+     * @return nextMaybeSupplier (invoked if this is a {@link None}
      */
-    @NotNull Maybe<T> or(@NotNull Supplier<Maybe<T>> nextMaybeSupplier);
+    Maybe<T> or(Supplier<Maybe<T>> nextMaybeSupplier);
 
     /**
      * Get the value, if this is a {@link Some}; otherwise, throw an exception.
@@ -235,17 +236,17 @@ public sealed interface Maybe<T> {
      * @return value
      * @throws NoSuchElementException if this is a {@link None}
      */
-    @NotNull T expect();
+    T expect();
 
     /**
      * Get the value, if this is a {@link Some}; otherwise, throw an exception via the provided {@link Supplier}.
      *
-     * @return value
-     * @param <X>  Exception to throw; if not a (subclass of) RuntimeException, it must be rethrown or caught
+     * @param <X>      Exception to throw; if not a (subclass of) RuntimeException, it must be rethrown or caught
      * @param supplier Supplier of exceptions to throw
+     * @return value
      * @throws X Exception to throw
      */
-    @NotNull <X extends Throwable> T getOrThrow(@NotNull Supplier<X> supplier) throws X;
+    <X extends Throwable> T getOrThrow(Supplier<X> supplier) throws X;
 
     /**
      * The non-empty {@link Maybe} which holds a non-null value.
@@ -253,7 +254,7 @@ public sealed interface Maybe<T> {
      * @param value the value
      * @param <T>   value type
      */
-    record Some<T>(@NotNull T value) implements Maybe<T> {
+    record Some<T>(T value) implements Maybe<T> {
 
 
         /**
@@ -265,7 +266,7 @@ public sealed interface Maybe<T> {
 
 
         @Override
-        public @NotNull Maybe<T> biMatch(@NotNull Consumer<? super T> someConsumer, @NotNull Runnable noneRunner) {
+        public Maybe<T> biMatch(Consumer<? super T> someConsumer, Runnable noneRunner) {
             requireNonNull( someConsumer );
             requireNonNull( noneRunner );
             someConsumer.accept( value );
@@ -273,51 +274,51 @@ public sealed interface Maybe<T> {
         }
 
         @Override
-        public @NotNull Maybe<T> filter(@NotNull Predicate<? super T> predicate) {
+        public Maybe<T> filter(Predicate<? super T> predicate) {
             requireNonNull( predicate );
             return predicate.test( value ) ? this : None.empty();
         }
 
         @Override
-        public <U> @NotNull U fold(@NotNull Function<? super T, ? extends U> fnSome, @NotNull Supplier<? extends U> supNone) {
+        public <U> U fold(Function<? super T, ? extends U> fnSome, Supplier<? extends U> supNone) {
             requireNonNull( fnSome );
             requireNonNull( supNone );
             return requireNonNull( fnSome.apply( value ) );
         }
 
         @Override
-        public @NotNull Stream<T> stream() {
+        public Stream<T> stream() {
             return Stream.of( value );
         }
 
         @Override
-        public @NotNull <U> Maybe<U> map(@NotNull Function<? super T, ? extends U> fnSome) {
+        public <U> Maybe<U> map(Function<? super T, ? extends U> fnSome) {
             requireNonNull( fnSome );
             return new Some<>( fnSome.apply( value ) );
         }
 
         @Override
-        public Maybe<T> match(@NotNull Consumer<? super T> someConsumer) {
+        public Maybe<T> match(Consumer<? super T> someConsumer) {
             requireNonNull( someConsumer );
             someConsumer.accept( value );
             return this;
         }
 
         @Override
-        public void consume(@NotNull Consumer<? super T> someConsumer) {
+        public void consume(Consumer<? super T> someConsumer) {
             requireNonNull( someConsumer );
             someConsumer.accept( value );
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public @NotNull <U> Maybe<U> flatMap(@NotNull Function<? super T, ? extends Maybe<? extends U>> mapper) {
+        public <U> Maybe<U> flatMap(Function<? super T, ? extends Maybe<? extends U>> mapper) {
             requireNonNull( mapper );
             return (Maybe<U>) requireNonNull( mapper.apply( value ) );
         }
 
         @Override
-        public boolean matches(@NotNull Predicate<T> predicate) {
+        public boolean matches(Predicate<T> predicate) {
             requireNonNull( predicate );
             return predicate.test( value );
         }
@@ -338,50 +339,50 @@ public sealed interface Maybe<T> {
         }
 
         @Override
-        public @NotNull T orElse(@NotNull T alternate) {
+        public T orElse(T alternate) {
             requireNonNull( value );
             return value;
         }
 
         @Override
-        public @NotNull T orElse(@NotNull Supplier<? extends T> supplier) {
+        public T orElse(Supplier<? extends T> supplier) {
             requireNonNull( supplier );
             return value;
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public @NotNull <U> Maybe<U> and(@NotNull Maybe<? extends U> nextMaybe) {
+        public <U> Maybe<U> and(Maybe<? extends U> nextMaybe) {
             requireNonNull( nextMaybe );
             return (Maybe<U>) nextMaybe;
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public @NotNull <U> Maybe<U> and(@NotNull Supplier<Maybe<? extends U>> nextMaybeSupplier) {
+        public <U> Maybe<U> and(Supplier<Maybe<? extends U>> nextMaybeSupplier) {
             requireNonNull( nextMaybeSupplier );
             return requireNonNull( (Maybe<U>) nextMaybeSupplier.get() );
         }
 
         @Override
-        public @NotNull Maybe<T> or(@NotNull Maybe<T> nextMaybe) {
+        public Maybe<T> or(Maybe<T> nextMaybe) {
             requireNonNull( nextMaybe );
             return this;
         }
 
         @Override
-        public @NotNull Maybe<T> or(@NotNull Supplier<Maybe<T>> nextMaybeSupplier) {
+        public Maybe<T> or(Supplier<Maybe<T>> nextMaybeSupplier) {
             requireNonNull( nextMaybeSupplier );
             return this;
         }
 
         @Override
-        public @NotNull T expect() {
+        public T expect() {
             return value;
         }
 
         @Override
-        public <X extends Throwable> @NotNull T getOrThrow(@NotNull Supplier<X> supplier)  {
+        public <X extends Throwable> T getOrThrow(Supplier<X> supplier) {
             return value;
         }
     }
@@ -402,10 +403,8 @@ public sealed interface Maybe<T> {
         }
 
 
-
-
         @Override
-        public @NotNull Maybe<T> biMatch(@NotNull Consumer<? super T> someConsumer, @NotNull Runnable noneRunner) {
+        public Maybe<T> biMatch(Consumer<? super T> someConsumer, Runnable noneRunner) {
             requireNonNull( someConsumer );
             requireNonNull( noneRunner );
             noneRunner.run();
@@ -413,49 +412,49 @@ public sealed interface Maybe<T> {
         }
 
         @Override
-        public @NotNull Maybe<T> filter(@NotNull Predicate<? super T> predicate) {
+        public Maybe<T> filter(Predicate<? super T> predicate) {
             requireNonNull( predicate );
             return None.empty();
         }
 
         @Override
-        public <U> @NotNull U fold(@NotNull Function<? super T, ? extends U> fnSome, @NotNull Supplier<? extends U> supNone) {
+        public <U> U fold(Function<? super T, ? extends U> fnSome, Supplier<? extends U> supNone) {
             requireNonNull( fnSome );
             requireNonNull( supNone );
             return requireNonNull( supNone.get() );
         }
 
         @Override
-        public @NotNull Stream<T> stream() {
+        public Stream<T> stream() {
             return Stream.empty();
         }
 
         @Override
-        public @NotNull <U> Maybe<U> map(@NotNull Function<? super T, ? extends U> fnSome) {
+        public <U> Maybe<U> map(Function<? super T, ? extends U> fnSome) {
             requireNonNull( fnSome );
             return empty();
         }
 
         @Override
-        public Maybe<T> match(@NotNull Consumer<? super T> someConsumer) {
+        public Maybe<T> match(Consumer<? super T> someConsumer) {
             requireNonNull( someConsumer );
             return this;    // do nothing
         }
 
         @Override
-        public void consume(@NotNull Consumer<? super T> someConsumer) {
+        public void consume(Consumer<? super T> someConsumer) {
             requireNonNull( someConsumer );
             // do nothing
         }
 
         @Override
-        public @NotNull <U> Maybe<U> flatMap(@NotNull Function<? super T, ? extends Maybe<? extends U>> someConsumer) {
+        public <U> Maybe<U> flatMap(Function<? super T, ? extends Maybe<? extends U>> someConsumer) {
             requireNonNull( someConsumer );
             return empty();
         }
 
         @Override
-        public boolean matches(@NotNull Predicate<T> predicate) {
+        public boolean matches(Predicate<T> predicate) {
             requireNonNull( predicate );
             return false;
         }
@@ -476,48 +475,48 @@ public sealed interface Maybe<T> {
         }
 
         @Override
-        public @NotNull T orElse(@NotNull T alternate) {
+        public T orElse(T alternate) {
             requireNonNull( alternate );
             return alternate;
         }
 
         @Override
-        public @NotNull T orElse(@NotNull Supplier<? extends T> supplier) {
+        public T orElse(Supplier<? extends T> supplier) {
             requireNonNull( supplier );
             return requireNonNull( supplier.get() );
         }
 
         @Override
-        public @NotNull <U> Maybe<U> and(@NotNull Maybe<? extends U> nextMaybe) {
+        public <U> Maybe<U> and(Maybe<? extends U> nextMaybe) {
             requireNonNull( nextMaybe );
             return empty();
         }
 
         @Override
-        public @NotNull <U> Maybe<U> and(@NotNull Supplier<Maybe<? extends U>> nextMaybeSupplier) {
+        public <U> Maybe<U> and(Supplier<Maybe<? extends U>> nextMaybeSupplier) {
             requireNonNull( nextMaybeSupplier );
             return empty();
         }
 
         @Override
-        public @NotNull Maybe<T> or(@NotNull Maybe<T> nextMaybe) {
+        public Maybe<T> or(Maybe<T> nextMaybe) {
             requireNonNull( nextMaybe );
             return nextMaybe;
         }
 
         @Override
-        public @NotNull Maybe<T> or(@NotNull Supplier<Maybe<T>> nextMaybeSupplier) {
+        public Maybe<T> or(Supplier<Maybe<T>> nextMaybeSupplier) {
             requireNonNull( nextMaybeSupplier );
             return requireNonNull( nextMaybeSupplier.get() );
         }
 
         @Override
-        public @NotNull T expect() throws NoSuchElementException {
+        public T expect() throws NoSuchElementException {
             throw new NoSuchElementException();
         }
 
         @Override
-        public <X extends Throwable> @NotNull T getOrThrow(@NotNull Supplier<X> supplier) throws X {
+        public <X extends Throwable> T getOrThrow(Supplier<X> supplier) throws X {
             throw requireNonNull( supplier.get() );
         }
     }
