@@ -392,7 +392,7 @@ public sealed interface Result<V, E> {
     boolean contains(@Nullable V okValue);
 
     /**
-     * If this {@link Result} is {@link Err}, return {@code rightAlternate}.
+     * If this {@link Result} is {@link Err}, return {@code okAlternate}.
      * Otherwise, return {@code this} (an {@link OK} {@link Result}).
      *
      * @param okAlternate alternate {@link OK} {@link Result}
@@ -544,7 +544,7 @@ public sealed interface Result<V, E> {
      * Otherwise, return {@code this} (an {@link Err} {@link Result}).
      *
      * @param errAlternate alternate {@link Err} {@link Result}
-     * @return {@code this}, or {@code leftAlternate} if {@code this} is an {@link OK}
+     * @return {@code this}, or {@code errAlternate} if {@code this} is an {@link OK}
      * @see #orElseErr(Object)
      * @see #orElse(Object)
      * @see #orElse(Supplier)
