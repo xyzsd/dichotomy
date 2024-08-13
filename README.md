@@ -81,7 +81,7 @@ Note that this could potentially pose problems given
 Runtime nullness checks (via Objects.requireNonNull) have not been removed.  
 
 The 1.1 branch also adds `Result::merge` which simplifies reduction operations on Streams of 
-'Result's (see method documentation and tests).
+'Result`s (see method documentation and tests for examples).
 
 
 ### Release 1.0 (January 2024)
