@@ -1,6 +1,6 @@
 package net.xyzsd.dichotomy.trying.function;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.function.Consumer;
 
@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> value type accepted by the {@link ExConsumer}
  */
+@NullMarked
 @FunctionalInterface
 public interface ExConsumer<T> {
 
@@ -29,7 +30,7 @@ public interface ExConsumer<T> {
      * @return ExConsumer
      * @param <IN> Consumer input type parameter
      */
-    @NotNull static <IN> ExConsumer<IN> from(@NotNull final Consumer<IN> consumer) {
+     static <IN> ExConsumer<IN> from( final Consumer<IN> consumer) {
         requireNonNull( consumer );
         return consumer::accept;
     }
@@ -47,7 +48,7 @@ public interface ExConsumer<T> {
      * @return a composed {@code ExConsumer} that performs this operation followed by the {@code after} operation.
      * @throws NullPointerException if {@code after} is null
      */
-    default ExConsumer<T> andThen(@NotNull ExConsumer<? super T> after) {
+    default ExConsumer<T> andThen( ExConsumer<? super T> after) {
         requireNonNull(after);
         return (T t) -> { after.accept(t); this.accept(t); };
     }

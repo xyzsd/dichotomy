@@ -10,7 +10,7 @@
  *
  */
 module net.xyzsd.dichotomy {
-    requires static org.jetbrains.annotations;
+    requires static org.jspecify;
 
     exports net.xyzsd.dichotomy;
     exports net.xyzsd.dichotomy.collectors;

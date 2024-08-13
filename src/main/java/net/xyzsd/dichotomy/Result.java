@@ -1,8 +1,8 @@
 package net.xyzsd.dichotomy;
 
 import net.xyzsd.dichotomy.trying.Try;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -70,6 +70,7 @@ import static java.util.Objects.requireNonNull;
  * @param <V> The Success type.
  * @param <E> THe Failure (value) type. Does not have to be an Exception.
  */
+@NullMarked
 public sealed interface Result<V, E> {
 
 
@@ -81,8 +82,8 @@ public sealed interface Result<V, E> {
      * @param <E>   Error value
      * @return OK result containing the given value.
      */
-    @NotNull
-    static <V, E> Result<V, E> ofOK(@NotNull V value) {
+
+    static <V, E> Result<V, E> ofOK(V value) {
         return new OK<>( value );
     }
 
@@ -95,7 +96,7 @@ public sealed interface Result<V, E> {
      * @param <E> Error value
      * @return OK result containing the given value.
      */
-    @NotNull
+
     static <E> Result<Empty, E> ofOK() {
         return new OK<>( Empty.getInstance() );
     }
@@ -118,11 +119,11 @@ public sealed interface Result<V, E> {
      *         }
      *     </pre>
      *
-     * @param <V> Value type
+     * @param <V>   Value type
      * @param value given value, which may be null
      * @return A result containing {@code OK<None>} or {@code Err<E>}.
      */
-    @NotNull
+
     static <V> Result<V, Empty> ofNullable(@Nullable V value) {
         return (value == null) ? ofErr( Empty.getInstance() ) : ofOK( value );
     }
@@ -142,7 +143,7 @@ public sealed interface Result<V, E> {
      *              // Lets say RuntimeException is the value type
      *              Optional<RuntimeException> myValue = someFunction();
      *              Result<None, RuntimeException> result = Result.ofOK(myValue).swap();
-     *     }
+     *}
      *
      * @param <V> Value type
      * @param opt the Optional from which we create the Result
@@ -150,8 +151,7 @@ public sealed interface Result<V, E> {
      * @see #ofNullable(Object)
      */
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    @NotNull
-    static <V> Result<V, Empty> from(@NotNull Optional<V> opt) {
+    static <V> Result<V, Empty> from(Optional<V> opt) {
         return opt.<Result<V, Empty>>map( Result::ofOK ).orElseGet( () -> Result.ofErr( Empty.getInstance() ) );
     }
 
@@ -163,20 +163,22 @@ public sealed interface Result<V, E> {
      * @param <E>   Error type
      * @return Result containing the given Error
      */
-    @NotNull
-    static <V, E> Result<V, E> ofErr(@NotNull E error) {
+
+    static <V, E> Result<V, E> ofErr(E error) {
         return new Err<>( error );
     }
 
 
     /**
      * If this is an {@link OK}, return {@code true}.
+     *
      * @return true if this is an OK result.
      */
     boolean isOK();
 
     /**
      * If this is an {@link Err}, return {@code true}.
+     *
      * @return true if this is an value result.
      */
     boolean isErr();
@@ -187,14 +189,14 @@ public sealed interface Result<V, E> {
      *
      * @return return the {@link OK} value if present; otherwise, return an empty {@link Optional}.
      */
-    @NotNull Optional<V> ok();
+    Optional<V> ok();
 
     /**
      * Get the {@link Err} value E as an {@link Optional}.
      *
      * @return return {@link Err} value if present; otherwise, return an empty {@link Optional}.
      */
-    @NotNull Optional<E> err();
+    Optional<E> err();
 
     /**
      * Create a new {@link Result} with values transposed.
@@ -203,20 +205,20 @@ public sealed interface Result<V, E> {
      *
      * @return A new {@link Result} with {@link OK} and {@link Err} values swapped.
      */
-    @NotNull Result<E, V> swap();
+    Result<E, V> swap();
 
     /**
      * Executes the action for the {@link OK} or {@link Err} depending upon
      * the value of this {@link Result}.
      *
+     * @param okConsumer  Consumer of OK values
+     * @param errConsumer Consumer of Err values
      * @return {@code this}
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #matchErr(Consumer)
-     * @param okConsumer Consumer of OK values
-     * @param errConsumer Consumer of Err values
      */
-    @NotNull Result<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer);
+    Result<V, E> biMatch(Consumer<? super V> okConsumer, Consumer<? super E> errConsumer);
 
     /**
      * Returns a new {@link Result}, the value of which is determined by the appropriate mapping function.
@@ -233,7 +235,7 @@ public sealed interface Result<V, E> {
      * @see #map(Function)
      * @see #mapErr(Function)
      */
-    @NotNull <V2, E2> Result<V2, E2> biMap(@NotNull Function<? super V, ? extends V2> okMapper, @NotNull Function<? super E, ? extends E2> errMapper);
+    <V2, E2> Result<V2, E2> biMap(Function<? super V, ? extends V2> okMapper, Function<? super E, ? extends E2> errMapper);
 
     /**
      * Returns a {@link Result}, produced from one of the appropriate mapping functions.
@@ -243,14 +245,14 @@ public sealed interface Result<V, E> {
      *
      * @param fnOK  the mapping function for {@link Err} values.
      * @param fnErr the mapping function for {@link OK} values.
-     * @param <E2>      type of the value,  which can be different from the original type
-     * @param <V2>      type of the value,  which can be different from the original type
+     * @param <E2>  type of the value,  which can be different from the original type
+     * @param <V2>  type of the value,  which can be different from the original type
      * @return the {@link Result} produced from {@code fnOK} or {@code fnErr}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #map(Function)
      * @see #mapErr(Function) (Function)
      */
-    @NotNull <V2, E2> Result<V2, E2> biFlatMap(@NotNull Function<? super V, ? extends Result<? extends V2, ? extends E2>> fnOK, @NotNull Function<? super E, ? extends Result<? extends V2, ? extends E2>> fnErr);
+    <V2, E2> Result<V2, E2> biFlatMap(Function<? super V, ? extends Result<? extends V2, ? extends E2>> fnOK, Function<? super E, ? extends Result<? extends V2, ? extends E2>> fnErr);
 
     /**
      * Returns a value, produced from one of the appropriate mapping functions.
@@ -264,22 +266,22 @@ public sealed interface Result<V, E> {
      *
      * @param fnOK  the mapping function for {@link Err} values.
      * @param fnErr the mapping function for {@link OK} values.
-     * @param <T> returned type, which must be the same for both functions
+     * @param <T>   returned type, which must be the same for both functions
      * @return the value produced from {@code fnOK} or {@code fnErr}
      * @throws NullPointerException if the called function returns {@code null}.
      * @see #recover(Function)
      * @see #forfeit(Function)
      */
-    @NotNull <T> T fold(@NotNull Function<? super V, ? extends T> fnOK, @NotNull Function<? super E, ? extends T> fnErr);
+    <T> T fold(Function<? super V, ? extends T> fnOK, Function<? super E, ? extends T> fnErr);
 
     /**
      * Return a {@link Stream}, containing either a single {@link OK} value, or an empty {@link Stream}
      * if this is an {@link Err} value.
      *
-     * @see #streamErr()
      * @return Stream
+     * @see #streamErr()
      */
-    @NotNull Stream<V> stream();
+    Stream<V> stream();
 
     /**
      * Filter a {@link Result}.
@@ -298,18 +300,18 @@ public sealed interface Result<V, E> {
      * @return a {@link Result} based on the algorithm described above.
      * @throws NullPointerException if the called mapping function returns {@code null}.
      */
-    @NotNull Result<V, E> filter(@NotNull Predicate<? super V> predicate, @NotNull Function<? super V, ? extends E> mapper);
+    Result<V, E> filter(Predicate<? super V> predicate, Function<? super V, ? extends E> mapper);
 
     /**
      * Executes the action iff this is an {@link OK} {@link Result}.
      *
+     * @param okConsumer Consumer of OK values
      * @return {@code this}
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #biMatch(Consumer, Consumer)
-     * @param okConsumer Consumer of OK values
-     * */
-    @NotNull Result<V, E> match(@NotNull Consumer<? super V> okConsumer);
+     */
+    Result<V, E> match(Consumer<? super V> okConsumer);
 
 
     /**
@@ -317,7 +319,7 @@ public sealed interface Result<V, E> {
      *
      * @param okConsumer the consumer function to be executed
      */
-    default void consume(@NotNull Consumer<? super V> okConsumer) {
+    default void consume(Consumer<? super V> okConsumer) {
         match( okConsumer );
     }
 
@@ -340,7 +342,7 @@ public sealed interface Result<V, E> {
      * @see #mapErr(Function)
      * @see #biMap(Function, Function)
      */
-    @NotNull <V2> Result<V2, E> map(@NotNull Function<? super V, ? extends V2> okMapper);
+    <V2> Result<V2, E> map(Function<? super V, ? extends V2> okMapper);
 
     /**
      * If this is an {@link OK}, return the new {@link Result} supplied by the mapping function.
@@ -361,7 +363,7 @@ public sealed interface Result<V, E> {
      * @see #biFlatMap(Function, Function)
      * @see #flatMapErr(Function)
      */
-    @NotNull <V2> Result<V2, E> flatMap(@NotNull Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper);
+    <V2> Result<V2, E> flatMap(Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper);
 
     /**
      * Determines if this {@link OK} {@link Result} matches the given {@link Predicate}.
@@ -375,7 +377,7 @@ public sealed interface Result<V, E> {
      * @see #ifPredicateErr(Predicate)
      * @see #containsErr(Object)
      */
-    boolean ifPredicate(@NotNull Predicate<V> okPredicate);
+    boolean ifPredicate(Predicate<V> okPredicate);
 
     /**
      * Determines if this {@link OK} {@link Result} contains the given value.
@@ -401,7 +403,7 @@ public sealed interface Result<V, E> {
      * @see #orElseErr(Object)
      * @see #orElseErr(Supplier)
      */
-    @NotNull V orElse(@NotNull V okAlternate);
+    V orElse(V okAlternate);
 
     /**
      * If this {@link Result} is {@link Err}, return the supplied {@link OK} {@link Result}.
@@ -414,7 +416,7 @@ public sealed interface Result<V, E> {
      * @see #orElseErr(Object)
      * @see #orElseErr(Supplier)
      */
-    @NotNull V orElse(@NotNull Supplier<? extends V> okSupplier);
+    V orElse(Supplier<? extends V> okSupplier);
 
     /**
      * Recover from an value; ignore the {@link Err} value if present,
@@ -432,27 +434,27 @@ public sealed interface Result<V, E> {
      *                              .
      * @see #forfeit(Function)
      */
-    @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V);
+    V recover(Function<? super E, ? extends V> fnE2V);
 
     /**
      * Return a {@link Stream}, containing either a single {@link Err} value, or an empty {@link Stream}
      * if this is an {@link OK} value.
      *
-     * @see #stream()
      * @return Stream
+     * @see #stream()
      */
-    @NotNull Stream<E> streamErr();
+    Stream<E> streamErr();
 
     /**
      * Executes the action iff this is an {@link Err} {@link Result}.
      *
+     * @param errConsumer Consumer of Err values
      * @return {@code this}
      * @throws NullPointerException if the called action returns {@code null}.
      * @see #match(Consumer)
      * @see #biMatch(Consumer, Consumer)
-     * @param errConsumer Consumer of Err values
      */
-    @NotNull Result<V, E> matchErr(@NotNull Consumer<? super E> errConsumer);
+    Result<V, E> matchErr(Consumer<? super E> errConsumer);
 
     /**
      * If this is an {@link Err}, return a new {@link Err} value produced by the given mapping function.
@@ -488,7 +490,7 @@ public sealed interface Result<V, E> {
      * @see #map(Function)
      * @see #biMap(Function, Function)
      */
-    @NotNull <E2> Result<V, E2> mapErr(@NotNull Function<? super E, ? extends E2> errMapper);
+    <E2> Result<V, E2> mapErr(Function<? super E, ? extends E2> errMapper);
 
     /**
      * If this is an {@link Err}, return the new {@link Result} supplied by the mapping function.
@@ -509,7 +511,7 @@ public sealed interface Result<V, E> {
      * @see #biFlatMap(Function, Function)
      * @see #flatMap(Function)
      */
-    @NotNull <E2> Result<V, E2> flatMapErr(@NotNull Function<? super E, ? extends Result<? extends V, ? extends E2>> errMapper);
+    <E2> Result<V, E2> flatMapErr(Function<? super E, ? extends Result<? extends V, ? extends E2>> errMapper);
 
     /**
      * Determines if this {@link Err} {@link Result} matches the given {@link Predicate}.
@@ -523,7 +525,7 @@ public sealed interface Result<V, E> {
      * @see #contains(Object)
      * @see #ifPredicate(Predicate)
      */
-    boolean ifPredicateErr(@NotNull Predicate<E> errPredicate);
+    boolean ifPredicateErr(Predicate<E> errPredicate);
 
     /**
      * Determines if this {@link Err} {@link Result} contains the given value.
@@ -549,7 +551,7 @@ public sealed interface Result<V, E> {
      * @see #orElse(Object)
      * @see #orElse(Supplier)
      */
-    @NotNull E orElseErr(@NotNull E errAlternate);
+    E orElseErr(E errAlternate);
 
     /**
      * If this {@link Result} is an {@link OK}, return the supplied {@link Err}  {@link Result}.
@@ -562,7 +564,7 @@ public sealed interface Result<V, E> {
      * @see #orElseErr(Object)
      * @see #orElseErr(Supplier)
      */
-    @NotNull E orElseErr(@NotNull Supplier<? extends E> errSupplier);
+    E orElseErr(Supplier<? extends E> errSupplier);
 
     /**
      * Forfeit (ignore) the {@link OK} value if present, and apply the mapping function to get an {@link Err}.
@@ -579,7 +581,7 @@ public sealed interface Result<V, E> {
      *                              .
      * @see #recover(Function)
      */
-    @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E);
+    E forfeit(Function<? super V, ? extends E> fnV2E);
 
     /**
      * If {@code this} is {@link Err}, return it. Otherwise, return the next {@link Result} given.
@@ -587,12 +589,12 @@ public sealed interface Result<V, E> {
      *
      * @param nextResult The {@link Result} to return.
      * @param <V2>       type of the value, which can be different from the original type
+     * @return this or the given Result
      * @see #and(Supplier)
      * @see #or(Result)
      * @see #or(Supplier)
-     * @return this or the given Result
      */
-    @NotNull <V2> Result<V2, E> and(@NotNull Result<V2, E> nextResult);
+    <V2> Result<V2, E> and(Result<V2, E> nextResult);
 
     /**
      * If {@code this} is {@link Err}, return it (without invoking the {@link Supplier}).
@@ -601,13 +603,13 @@ public sealed interface Result<V, E> {
      *
      * @param nextResultSupplier The supplier of a {@link Result} to return; only called if {@code this} is {@link OK}.
      * @param <V2>               type of the value, which can be different from the original type
+     * @return this or the supplied Result
      * @throws NullPointerException if the supplied {@link Result} is {@code null}.
      * @see #and(Result)
      * @see #or(Result)
      * @see #or(Supplier)
-     * @return this or the supplied Result
      */
-    @NotNull <V2> Result<V2, E> and(@NotNull Supplier<Result<V2, E>> nextResultSupplier);
+    <V2> Result<V2, E> and(Supplier<Result<V2, E>> nextResultSupplier);
 
     /**
      * If {@code this} is {@link OK}, return it.
@@ -617,12 +619,12 @@ public sealed interface Result<V, E> {
      * @param nextResult The {@link Result} to return.
      * @param <E2>       type of the value,
      *                   which can be different from the original type
+     * @return this or the given Result
      * @see #or(Supplier)
      * @see #and(Result)
      * @see #and(Supplier)
-     * @return this or the given Result
      */
-    @NotNull <E2> Result<V, E2> or(@NotNull Result<V, E2> nextResult);
+    <E2> Result<V, E2> or(Result<V, E2> nextResult);
 
     /**
      * If {@code this} is {@link OK}, return it (without invoking the {@link Supplier}).
@@ -632,13 +634,13 @@ public sealed interface Result<V, E> {
      * @param nextResultSupplier The supplier of a {@link Result} to return; only called if {@code this} is {@link Err}.
      * @param <E2>               type of the value,
      *                           which can be different from the original type
+     * @return this or the supplied Result
      * @throws NullPointerException if the supplier is called and returns {@code null}.
      * @see #or(Result)
      * @see #and(Result)
      * @see #and(Supplier)
-     * @return this or the supplied Result
      */
-    @NotNull <E2> Result<V, E2> or(@NotNull Supplier<Result<V, E2>> nextResultSupplier);
+    <E2> Result<V, E2> or(Supplier<Result<V, E2>> nextResultSupplier);
 
     /**
      * Expect success (an {@link OK} value), otherwise throw a <strong>runtime</strong> Exception.
@@ -658,7 +660,7 @@ public sealed interface Result<V, E> {
      * @return Value (if {@link OK}) or throws a {@link RuntimeException} (if {@link Err})
      * @throws RuntimeException as detailed above.
      */
-    @NotNull V expect() throws RuntimeException;
+    V expect() throws RuntimeException;
 
     /**
      * Throw the given supplied {@link Exception}
@@ -709,7 +711,7 @@ public sealed interface Result<V, E> {
      * @throws X Exception
      * @see #expect()
      */
-    @NotNull <X extends Exception> V getOrThrow(@NotNull Function<E, X> exFn) throws X;
+    <X extends Exception> V getOrThrow(Function<E, X> exFn) throws X;
 
     /**
      * Success Result.
@@ -718,7 +720,7 @@ public sealed interface Result<V, E> {
      * @param <V>   OK type
      * @param <E>   Error type
      */
-    record OK<V, E>(@NotNull V value) implements Result<V, E> {
+    record OK<V, E>(V value) implements Result<V, E> {
 
 
         /**
@@ -735,7 +737,7 @@ public sealed interface Result<V, E> {
          *
          * @return unwrapped value V
          */
-        public @NotNull V get() {
+        public V get() {
             return value;
         }
 
@@ -750,22 +752,22 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull Optional<V> ok() {
+        public Optional<V> ok() {
             return Optional.of( value );
         }
 
         @Override
-        public @NotNull Optional<E> err() {
+        public Optional<E> err() {
             return Optional.empty();
         }
 
         @Override
-        public @NotNull Result<E, V> swap() {
+        public Result<E, V> swap() {
             return new Err<>( value );
         }
 
         @Override
-        public @NotNull Result<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer) {
+        public Result<V, E> biMatch(Consumer<? super V> okConsumer, Consumer<? super E> errConsumer) {
             requireNonNull( okConsumer );
             requireNonNull( errConsumer );
             okConsumer.accept( value );
@@ -773,7 +775,7 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull <V2, E2> Result<V2, E2> biMap(@NotNull Function<? super V, ? extends V2> okMapper, @NotNull Function<? super E, ? extends E2> errMapper) {
+        public <V2, E2> Result<V2, E2> biMap(Function<? super V, ? extends V2> okMapper, Function<? super E, ? extends E2> errMapper) {
             requireNonNull( okMapper );
             requireNonNull( errMapper );
             return new OK<>( okMapper.apply( value ) );
@@ -782,26 +784,26 @@ public sealed interface Result<V, E> {
 
         @SuppressWarnings("unchecked")
         @Override
-        public @NotNull <V2, E2> Result<V2, E2> biFlatMap(@NotNull Function<? super V, ? extends Result<? extends V2, ? extends E2>> okMapper, @NotNull Function<? super E, ? extends Result<? extends V2, ? extends E2>> errMapper) {
+        public <V2, E2> Result<V2, E2> biFlatMap(Function<? super V, ? extends Result<? extends V2, ? extends E2>> okMapper, Function<? super E, ? extends Result<? extends V2, ? extends E2>> errMapper) {
             requireNonNull( okMapper );
             requireNonNull( errMapper );
             return (Result<V2, E2>) requireNonNull( okMapper.apply( value ) );
         }
 
         @Override
-        public <T> @NotNull T fold(@NotNull Function<? super V, ? extends T> fnOK, @NotNull Function<? super E, ? extends T> fnErr) {
+        public <T> T fold(Function<? super V, ? extends T> fnOK, Function<? super E, ? extends T> fnErr) {
             requireNonNull( fnOK );
             requireNonNull( fnErr );
             return requireNonNull( fnOK.apply( value ) );
         }
 
         @Override
-        public @NotNull Stream<V> stream() {
+        public Stream<V> stream() {
             return Stream.of( value );
         }
 
         @Override
-        public @NotNull Result<V, E> filter(@NotNull Predicate<? super V> predicate, @NotNull Function<? super V, ? extends E> mapper) {
+        public Result<V, E> filter(Predicate<? super V> predicate, Function<? super V, ? extends E> mapper) {
             requireNonNull( predicate );
             requireNonNull( mapper );
             if (predicate.test( value )) {
@@ -811,27 +813,27 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull Result<V, E> match(@NotNull Consumer<? super V> okConsumer) {
+        public Result<V, E> match(Consumer<? super V> okConsumer) {
             requireNonNull( okConsumer );
             okConsumer.accept( value );
             return this;
         }
 
         @Override
-        public @NotNull <V2> Result<V2, E> map(@NotNull Function<? super V, ? extends V2> okMapper) {
+        public <V2> Result<V2, E> map(Function<? super V, ? extends V2> okMapper) {
             requireNonNull( okMapper );
             return new OK<>( okMapper.apply( value ) );
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public @NotNull <V2> Result<V2, E> flatMap(@NotNull Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper) {
+        public <V2> Result<V2, E> flatMap(Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper) {
             requireNonNull( okMapper );
             return (Result<V2, E>) requireNonNull( okMapper.apply( value ) );
         }
 
         @Override
-        public boolean ifPredicate(@NotNull Predicate<V> okPredicate) {
+        public boolean ifPredicate(Predicate<V> okPredicate) {
             requireNonNull( okPredicate );
             return okPredicate.test( value );
         }
@@ -842,48 +844,48 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull V orElse(@NotNull V okAlternate) {
+        public V orElse(V okAlternate) {
             requireNonNull( okAlternate );
             return value;
         }
 
         @Override
-        public @NotNull V orElse(@NotNull Supplier<? extends V> okSupplier) {
+        public V orElse(Supplier<? extends V> okSupplier) {
             requireNonNull( okSupplier );
             return value;
         }
 
         @Override
-        public @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V) {
+        public V recover(Function<? super E, ? extends V> fnE2V) {
             requireNonNull( fnE2V );
             return value;
         }
 
         @Override
-        public @NotNull Stream<E> streamErr() {
+        public Stream<E> streamErr() {
             return Stream.empty();
         }
 
         @Override
-        public @NotNull Result<V, E> matchErr(@NotNull Consumer<? super E> errConsumer) {
+        public Result<V, E> matchErr(Consumer<? super E> errConsumer) {
             requireNonNull( errConsumer );
             return this;
         }
 
         @Override
-        public @NotNull <E2> Result<V, E2> mapErr(@NotNull Function<? super E, ? extends E2> errMapper) {
+        public <E2> Result<V, E2> mapErr(Function<? super E, ? extends E2> errMapper) {
             requireNonNull( errMapper );
             return coerce();
         }
 
         @Override
-        public @NotNull <E2> Result<V, E2> flatMapErr(@NotNull Function<? super E, ? extends Result<? extends V, ? extends E2>> errMapper) {
+        public <E2> Result<V, E2> flatMapErr(Function<? super E, ? extends Result<? extends V, ? extends E2>> errMapper) {
             requireNonNull( errMapper );
             return coerce();
         }
 
         @Override
-        public boolean ifPredicateErr(@NotNull Predicate<E> errPredicate) {
+        public boolean ifPredicateErr(Predicate<E> errPredicate) {
             requireNonNull( errPredicate );
             return false;
         }
@@ -895,54 +897,54 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull E orElseErr(@NotNull E errAlternate) {
+        public E orElseErr(E errAlternate) {
             requireNonNull( errAlternate );
             return errAlternate;
         }
 
         @Override
-        public @NotNull E orElseErr(@NotNull Supplier<? extends E> errSupplier) {
+        public E orElseErr(Supplier<? extends E> errSupplier) {
             requireNonNull( errSupplier );
             return requireNonNull( errSupplier.get() );
         }
 
         @Override
-        public @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E) {
+        public E forfeit(Function<? super V, ? extends E> fnV2E) {
             requireNonNull( fnV2E );
             return requireNonNull( fnV2E.apply( value ) );
         }
 
         @Override
-        public @NotNull <V2> Result<V2, E> and(@NotNull Result<V2, E> nextResult) {
+        public <V2> Result<V2, E> and(Result<V2, E> nextResult) {
             requireNonNull( nextResult );
             return nextResult;
         }
 
         @Override
-        public @NotNull <V2> Result<V2, E> and(@NotNull Supplier<Result<V2, E>> nextResultSupplier) {
+        public <V2> Result<V2, E> and(Supplier<Result<V2, E>> nextResultSupplier) {
             requireNonNull( nextResultSupplier );
             return requireNonNull( nextResultSupplier.get() );
         }
 
         @Override
-        public @NotNull <E2> Result<V, E2> or(@NotNull Result<V, E2> nextResult) {
+        public <E2> Result<V, E2> or(Result<V, E2> nextResult) {
             requireNonNull( nextResult );
             return coerce();
         }
 
         @Override
-        public @NotNull <E2> Result<V, E2> or(@NotNull Supplier<Result<V, E2>> nextResultSupplier) {
+        public <E2> Result<V, E2> or(Supplier<Result<V, E2>> nextResultSupplier) {
             requireNonNull( nextResultSupplier );
             return coerce();
         }
 
         @Override
-        public @NotNull V expect()  {
+        public V expect() {
             return value;
         }
 
         @Override
-        public <X extends Exception> @NotNull V getOrThrow(@NotNull Function<E, X> exFn) {
+        public <X extends Exception> V getOrThrow(Function<E, X> exFn) {
             return value;
         }
 
@@ -951,7 +953,7 @@ public sealed interface Result<V, E> {
         // just cast and return. Types are erased so there is no need to create a new object.
         // The value stays the same, only the empty value signature changes
         @SuppressWarnings("unchecked")
-        @NotNull
+
         private <E2> Result<V, E2> coerce() {
             return (Result<V, E2>) this;
         }
@@ -964,7 +966,7 @@ public sealed interface Result<V, E> {
      * @param <V>   OK type
      * @param <E>   Error type
      */
-    record Err<V, E>(@NotNull E value) implements Result<V, E> {
+    record Err<V, E>(E value) implements Result<V, E> {
 
         /**
          * Create an OK with the given non-null value.
@@ -981,7 +983,7 @@ public sealed interface Result<V, E> {
          *
          * @return unwrapped Err E
          */
-        public @NotNull E get() {
+        public E get() {
             return value;
         }
 
@@ -997,22 +999,22 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull Optional<V> ok() {
+        public Optional<V> ok() {
             return Optional.empty();
         }
 
         @Override
-        public @NotNull Optional<E> err() {
+        public Optional<E> err() {
             return Optional.of( value );
         }
 
         @Override
-        public @NotNull Result<E, V> swap() {
+        public Result<E, V> swap() {
             return new OK<>( value );
         }
 
         @Override
-        public @NotNull Result<V, E> biMatch(@NotNull Consumer<? super V> okConsumer, @NotNull Consumer<? super E> errConsumer) {
+        public Result<V, E> biMatch(Consumer<? super V> okConsumer, Consumer<? super E> errConsumer) {
             requireNonNull( okConsumer );
             requireNonNull( errConsumer );
             errConsumer.accept( value );
@@ -1020,7 +1022,7 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull <V2, E2> Result<V2, E2> biMap(@NotNull Function<? super V, ? extends V2> okMapper, @NotNull Function<? super E, ? extends E2> errMapper) {
+        public <V2, E2> Result<V2, E2> biMap(Function<? super V, ? extends V2> okMapper, Function<? super E, ? extends E2> errMapper) {
             requireNonNull( okMapper );
             requireNonNull( errMapper );
             return new Err<>( errMapper.apply( value ) );
@@ -1028,51 +1030,51 @@ public sealed interface Result<V, E> {
 
         @SuppressWarnings("unchecked")
         @Override
-        public @NotNull <V2, E2> Result<V2, E2> biFlatMap(@NotNull Function<? super V, ? extends Result<? extends V2, ? extends E2>> okMapper, @NotNull Function<? super E, ? extends Result<? extends V2, ? extends E2>> errMapper) {
+        public <V2, E2> Result<V2, E2> biFlatMap(Function<? super V, ? extends Result<? extends V2, ? extends E2>> okMapper, Function<? super E, ? extends Result<? extends V2, ? extends E2>> errMapper) {
             requireNonNull( okMapper );
             requireNonNull( errMapper );
             return (Result<V2, E2>) requireNonNull( errMapper.apply( value ) );
         }
 
         @Override
-        public <T> @NotNull T fold(@NotNull Function<? super V, ? extends T> fnOK, @NotNull Function<? super E, ? extends T> fnErr) {
+        public <T> T fold(Function<? super V, ? extends T> fnOK, Function<? super E, ? extends T> fnErr) {
             requireNonNull( fnOK );
             requireNonNull( fnErr );
             return requireNonNull( fnErr.apply( value ) );
         }
 
         @Override
-        public @NotNull Stream<V> stream() {
+        public Stream<V> stream() {
             return Stream.empty();
         }
 
         @Override
-        public @NotNull Result<V, E> filter(@NotNull Predicate<? super V> predicate, @NotNull Function<? super V, ? extends E> mapper) {
+        public Result<V, E> filter(Predicate<? super V> predicate, Function<? super V, ? extends E> mapper) {
             requireNonNull( predicate );
             requireNonNull( mapper );
             return this;
         }
 
         @Override
-        public @NotNull Result<V, E> match(@NotNull Consumer<? super V> okConsumer) {
+        public Result<V, E> match(Consumer<? super V> okConsumer) {
             requireNonNull( okConsumer );
             return this;
         }
 
         @Override
-        public @NotNull <V2> Result<V2, E> map(@NotNull Function<? super V, ? extends V2> okMapper) {
+        public <V2> Result<V2, E> map(Function<? super V, ? extends V2> okMapper) {
             requireNonNull( okMapper );
             return coerce();
         }
 
         @Override
-        public @NotNull <V2> Result<V2, E> flatMap(@NotNull Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper) {
+        public <V2> Result<V2, E> flatMap(Function<? super V, ? extends Result<? extends V2, ? extends E>> okMapper) {
             requireNonNull( okMapper );
             return coerce();
         }
 
         @Override
-        public boolean ifPredicate(@NotNull Predicate<V> okPredicate) {
+        public boolean ifPredicate(Predicate<V> okPredicate) {
             requireNonNull( okPredicate );
             return false;
         }
@@ -1084,50 +1086,50 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull V orElse(@NotNull V okAlternate) {
+        public V orElse(V okAlternate) {
             requireNonNull( okAlternate );
             return okAlternate;
         }
 
         @Override
-        public @NotNull V orElse(@NotNull Supplier<? extends V> okSupplier) {
+        public V orElse(Supplier<? extends V> okSupplier) {
             requireNonNull( okSupplier );
             return requireNonNull( okSupplier.get() );
         }
 
         @Override
-        public @NotNull V recover(@NotNull Function<? super E, ? extends V> fnE2V) {
+        public V recover(Function<? super E, ? extends V> fnE2V) {
             requireNonNull( fnE2V );
             return requireNonNull( fnE2V.apply( value ) );
         }
 
         @Override
-        public @NotNull Stream<E> streamErr() {
+        public Stream<E> streamErr() {
             return Stream.of( value );
         }
 
         @Override
-        public @NotNull Result<V, E> matchErr(@NotNull Consumer<? super E> errConsumer) {
+        public Result<V, E> matchErr(Consumer<? super E> errConsumer) {
             requireNonNull( errConsumer );
             errConsumer.accept( value );
             return this;
         }
 
         @Override
-        public @NotNull <E2> Result<V, E2> mapErr(@NotNull Function<? super E, ? extends E2> errMapper) {
+        public <E2> Result<V, E2> mapErr(Function<? super E, ? extends E2> errMapper) {
             requireNonNull( errMapper );
             return new Err<>( errMapper.apply( value ) );
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public @NotNull <E2> Result<V, E2> flatMapErr(@NotNull Function<? super E, ? extends Result<? extends V, ? extends E2>> errMapper) {
+        public <E2> Result<V, E2> flatMapErr(Function<? super E, ? extends Result<? extends V, ? extends E2>> errMapper) {
             requireNonNull( errMapper );
             return (Result<V, E2>) requireNonNull( errMapper.apply( value ) );
         }
 
         @Override
-        public boolean ifPredicateErr(@NotNull Predicate<E> errPredicate) {
+        public boolean ifPredicateErr(Predicate<E> errPredicate) {
             requireNonNull( errPredicate );
             return errPredicate.test( value );
         }
@@ -1139,58 +1141,58 @@ public sealed interface Result<V, E> {
         }
 
         @Override
-        public @NotNull E orElseErr(@NotNull E errAlternate) {
+        public E orElseErr(E errAlternate) {
             requireNonNull( errAlternate );
             return value;
         }
 
         @Override
-        public @NotNull E orElseErr(@NotNull Supplier<? extends E> errSupplier) {
+        public E orElseErr(Supplier<? extends E> errSupplier) {
             requireNonNull( errSupplier );
             return value;
         }
 
         @Override
-        public @NotNull E forfeit(@NotNull Function<? super V, ? extends E> fnV2E) {
+        public E forfeit(Function<? super V, ? extends E> fnV2E) {
             requireNonNull( fnV2E );
             return value;
         }
 
         @Override
-        public @NotNull <V2> Result<V2, E> and(@NotNull Result<V2, E> nextResult) {
+        public <V2> Result<V2, E> and(Result<V2, E> nextResult) {
             requireNonNull( nextResult );
             return coerce();
         }
 
         @Override
-        public @NotNull <V2> Result<V2, E> and(@NotNull Supplier<Result<V2, E>> nextResultSupplier) {
+        public <V2> Result<V2, E> and(Supplier<Result<V2, E>> nextResultSupplier) {
             requireNonNull( nextResultSupplier );
             return coerce();
         }
 
         @Override
-        public @NotNull <E2> Result<V, E2> or(@NotNull Result<V, E2> nextResult) {
+        public <E2> Result<V, E2> or(Result<V, E2> nextResult) {
             requireNonNull( nextResult );
             return nextResult;
         }
 
         @Override
-        public @NotNull <E2> Result<V, E2> or(@NotNull Supplier<Result<V, E2>> nextResultSupplier) {
+        public <E2> Result<V, E2> or(Supplier<Result<V, E2>> nextResultSupplier) {
             requireNonNull( nextResultSupplier );
             return requireNonNull( nextResultSupplier.get() );
         }
 
         @Override
-        public @NotNull V expect() throws RuntimeException {
-            switch(value) {
+        public V expect() throws RuntimeException {
+            switch (value) {
                 case RuntimeException e -> throw e;
-                case Throwable t -> throw new NoSuchElementException(t);
+                case Throwable t -> throw new NoSuchElementException( t );
                 default -> throw new NoSuchElementException( String.valueOf( value ) );
             }
         }
 
         @Override
-        public <X extends Exception> @NotNull V getOrThrow(@NotNull Function<E, X> exFn) throws X {
+        public <X extends Exception> V getOrThrow(Function<E, X> exFn) throws X {
             requireNonNull( exFn );
             throw requireNonNull( exFn.apply( value ) );
         }
@@ -1199,7 +1201,7 @@ public sealed interface Result<V, E> {
         // just cast and return. Types are erased so there is no need to create a new object.
         // The Error stays the same; only the empty value signature changes
         @SuppressWarnings("unchecked")
-        @NotNull
+
         private <V2> Result<V2, E> coerce() {
             return (Result<V2, E>) this;
         }

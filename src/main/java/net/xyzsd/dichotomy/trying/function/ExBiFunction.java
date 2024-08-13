@@ -1,6 +1,6 @@
 package net.xyzsd.dichotomy.trying.function;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
  * @see Function
  * @since 1.8
  */
+@NullMarked
 @FunctionalInterface
 public interface ExBiFunction<T, U, R> {
 
@@ -33,7 +34,7 @@ public interface ExBiFunction<T, U, R> {
      * @return the function result
      * @throws Exception exception
      */
-    @NotNull R apply(T t, U u) throws Throwable;
+     R apply(T t, U u) throws Throwable;
 
     /**
      * Convert a BiFunction to an ExBiFunction. The BiFunction is only invoked when used.
@@ -44,7 +45,7 @@ public interface ExBiFunction<T, U, R> {
      * @param <OUT> function return type
      * @throws NullPointerException if input biFn is null OR return value is null
      */
-    @NotNull static <IN1, IN2, OUT> ExBiFunction<IN1, IN2, OUT> from(@NotNull final BiFunction<IN1, IN2, OUT> biFn) {
+     static <IN1, IN2, OUT> ExBiFunction<IN1, IN2, OUT> from( final BiFunction<IN1, IN2, OUT> biFn) {
         requireNonNull( biFn );
         return requireNonNull( biFn::apply );
     }

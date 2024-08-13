@@ -1,7 +1,7 @@
 package net.xyzsd.dichotomy;
 
 import net.xyzsd.dichotomy.trying.Try;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 
 /**
@@ -9,19 +9,20 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * Convert {@link Either}s, {@link Result}s, or {@link Try}s to another monadic type.
  */
+@NullMarked
 public interface Conversion {
 
     /**
      * Converts a {@link Result} into an {@link Either}.
      *
-     * @param <L> the type of the left value in the {@link Either}
-     * @param <R> the type of the right value in the {@link Either}
+     * @param <L>    the type of the left value in the {@link Either}
+     * @param <R>    the type of the right value in the {@link Either}
      * @param result a {@link Result} to be converted into an {@link Either}
      * @return an {@link Either} object representing the converted result
      * @throws IllegalArgumentException if the {@code result} parameter is null
      */
-    @NotNull
-    static <L, R> Either<L, R> toEither(@NotNull Result<R, L> result) {
+
+    static <L, R> Either<L, R> toEither(Result<R, L> result) {
         return result.fold( Either::ofRight, Either::ofLeft );
     }
 
@@ -38,25 +39,24 @@ public interface Conversion {
      * @return an {@link Either} object representing the converted {@link Try} result
      * @throws IllegalArgumentException if the {@code tri} parameter is null
      */
-    @NotNull
-    static <V> Either<Throwable, V> toEither(@NotNull Try<V> tri) {
+
+    static <V> Either<Throwable, V> toEither(Try<V> tri) {
         return tri.fold( Either::ofRight, Either::ofLeft );
     }
 
     /**
      * Converts an {@link Either} object into a {@link Result} object.
      *
-     * @param <L> the type of the left value in the {@link Either}
-     * @param <R> the type of the right value in the {@link Either}
+     * @param <L>    the type of the left value in the {@link Either}
+     * @param <R>    the type of the right value in the {@link Either}
      * @param either the {@link Either} object to be converted
      * @return a {@link Result} object representing the converted {@link Either}
      * @throws IllegalArgumentException if the {@code either} parameter is null
      */
-    @NotNull
-    static <L, R> Result<R, L> toResult(@NotNull final Either<L, R> either) {
+
+    static <L, R> Result<R, L> toResult(final Either<L, R> either) {
         return either.fold( Result::ofErr, Result::ofOK );
     }
-
 
 
     /**
@@ -67,45 +67,40 @@ public interface Conversion {
      * @return a {@link Result} object representing the converted {@link Try} result
      * @throws IllegalArgumentException if the {@code tri} parameter is null
      */
-    @NotNull
-    static <V> Result<V, Throwable> toResult(@NotNull Try<V> tri) {
+
+    static <V> Result<V, Throwable> toResult(Try<V> tri) {
         return tri.fold( Result::ofOK, Result::ofErr );
     }
-
 
 
     /**
      * Converts an {@link Either} object into a {@link Try} object.
      *
-     * @param <L> the type of the left value in the {@link Either}
-     * @param <R> the type of the right value in the {@link Either}
+     * @param <L>    the type of the left value in the {@link Either}
+     * @param <R>    the type of the right value in the {@link Either}
      * @param either the {@link Either} object to be converted
      * @return a {@link Try} object representing the converted {@link Either}
      * @throws IllegalArgumentException if the {@code either} parameter is null
      */
-    @NotNull
-    static <L extends Exception, R> Try<R> toTry(@NotNull Either<L, R> either) {
+
+    static <L extends Exception, R> Try<R> toTry(Either<L, R> either) {
         return either.fold( Try::ofFailure, Try::ofSuccess );
     }
-
 
 
     /**
      * Converts a {@link Result} into a {@link Try}.
      *
-     * @param <V> the type of the value in the {@link Result}
-     * @param <X> the type of the exception in the {@link Try}
+     * @param <V>    the type of the value in the {@link Result}
+     * @param <X>    the type of the exception in the {@link Try}
      * @param result a {@link Result} to be converted into a {@link Try}
      * @return a {@link Try} object representing the converted result
      * @throws IllegalArgumentException if the {@code result} parameter is null
      */
-    @NotNull
-    static <V, X extends Exception> Try<V> toTry(@NotNull Result<V, X> result) {
+
+    static <V, X extends Exception> Try<V> toTry(Result<V, X> result) {
         return result.fold( Try::ofSuccess, Try::ofFailure );
     }
-
-
-
 
 
 }
