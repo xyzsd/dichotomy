@@ -1,41 +1,18 @@
-/*
- *  Copyright 2025, xyzsd (Zach Del)
- *
- *  Licensed under either of:
- *
- *    Apache License, Version 2.0
- *       (see LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
- *    MIT license
- *       (see LICENSE-MIT) or http://opensource.org/licenses/MIT)
- *
- *  at your option.
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-import com.vanniktech.maven.publish.JavaLibrary
-import com.vanniktech.maven.publish.JavadocJar
-import com.vanniktech.maven.publish.SonatypeHost
+// see: 
+//      https://docs.github.com/en/actions/publishing-packages/publishing-java-packages-with-gradle
+//      https://docs.gradle.org/current/userguide/publishing_maven.html
 
 plugins {
     id("java-library")
-    id("com.vanniktech.maven.publish") version "0.31.0"
-    id("signing")
+    id("maven-publish")
+    signing
 }
 
-
 group = "net.xyzsd"
-version = "1.1-SNAPSHOT"
-// versions ending with "-SNAPSHOT" will end up at:
-// https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/net/xyzsd/dichotomy/
-//
+version = "1.1"
 
 repositories {
     mavenCentral()
-    gradlePluginPortal()
 }
 
 dependencies {
@@ -51,102 +28,107 @@ java {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 
-    // withJavadocJar()
-    // withSourcesJar()
+    withJavadocJar()
+    withSourcesJar()
 }
 
-tasks.compileJava {
-    options.setEncoding("UTF-8")
+
+tasks.getByName<Test>("test") {
+    useJUnitPlatform()
+}
+
+
+
+tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:preview")
     options.compilerArgs.add("-Xlint:unchecked")
 }
 
-tasks.test {
+
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-tasks.javadoc {
-    val javadocOptions = options as CoreJavadocOptions
-    //javadocOptions.addBooleanOption("-enable-preview", true)
-    javadocOptions.addStringOption("source", "21")
-    javadocOptions.addStringOption("Xdoclint:none", "-quiet")   // for sanity
-    javadocOptions.addBooleanOption("html5", true)
+tasks.withType<JavaExec>().configureEach {
 }
 
 
-// for reproducible builds
-tasks.jar {
-    setPreserveFileTimestamps(false);
-    setReproducibleFileOrder(true);
-}
 
-// secrets: see
-//   https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets
-//
-// properties (local)
-// ==================
-//  mavenCentralUsername=[generated username (token)]
-//  mavenCentralPassword=[token password, also generated]
-//
-// environmental (local or, say, Github)
-// =====================================
-//  ORG_GRADLE_PROJECT_mavenCentralUsername=[generated username (token)]
-//  ORG_GRADLE_PROJECT_mavenCentralPassword=[token password, also generated]
-//
-mavenPublishing {
-    configure(JavaLibrary(JavadocJar.Javadoc(), true))
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    signAllPublications()
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            
+            pom {
+                name.set("dichotomy")
+                description.set("Result, Try, Maybe, and Either monads for Java")
+                url.set("https://maven.pkg.github.com/xyzsd/dichotomy")   
 
-    pom {
-        coordinates("net.xyzsd.dichotomy", "dichotomy", version as String)
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
 
-        name.set("dichotomy")
-        description.set("Result, Try, Maybe, and Either monads for Java")
-        url.set("https://maven.pkg.github.com/xyzsd/dichotomy")
+                    license {
+                        name.set("The MIT License")
+                        url.set("http://opensource.org/licenses/MIT")
+                    }            
+                }
 
-        licenses {
-            license {
-                name.set("The Apache License, Version 2.0")
-                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                comments.set("A business-friendly OSS license")
-            }
-
-            license {
-                name.set("The MIT License")
-                url.set("http://opensource.org/licenses/MIT")
-                comments.set("A GPL/LGPL compatible OSS license")
+                developers {
+                    developer {
+                        id.set("xyzsd")
+                        email.set("xyzsd@xyzsd.net")
+                    }
+                }
+                
+                scm {
+                        connection.set("scm:git:git://github.com/xyzsd/dichotomy.git")
+                        developerConnection.set("scm:git:ssh://git@github.com:xyzsd/dichotomy.git")
+                        url.set("https://github.com/xyzsd/dichotomy")
+                }
             }
         }
-
-        developers {
-            developer {
-                id.set("xyzsd")
-                name.set("Zach Del")
-                email.set("xyzsd@xyzsd.net")
-            }
-        }
-
-        scm {
-            connection.set("scm:git:git://github.com/xyzsd/dichotomy.git")
-            developerConnection.set("scm:git:ssh://git@github.com:xyzsd/dichotomy.git")
-            url.set("https://github.com/xyzsd/dichotomy")
+    }
+    
+    repositories {
+        maven {
+            name = "OSSRH"
+            
+            val releasesRepoUrl = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+            val snapshotsRepoUrl = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
+        
+            credentials {
+                    username = System.getenv("OSSRH_USERNAME")
+                    password = System.getenv("OSSRH_PASSWORD")
+                }
         }
     }
 }
 
 signing {
-    val githubCI: Boolean = "true".equals(System.getenv("CI")) || false;
-    if (githubCI) {
-        project.logger.lifecycle("Signing: Using Github environment.")
-        val signingKey: String? = System.getenv("SIGNING_KEY_PRIVATE")
-        val signingKeyPassphrase: String? = System.getenv("SIGNING_KEY_PASSPHRASE")
-        useInMemoryPgpKeys(signingKey, signingKeyPassphrase)
-    } else {
-        project.logger.lifecycle("Signing: Using local credentials.")
-    }
+    val signingKey: String? = System.getenv("SIGNING_KEY_PRIVATE")
+    val signingKeyPassphrase: String? = System.getenv("SIGNING_KEY_PASSPHRASE")
+    useInMemoryPgpKeys(signingKey, signingKeyPassphrase)
+    sign(publishing.publications["mavenJava"])
 }
 
+// JavaDoc options
+tasks.javadoc {
+    if (JavaVersion.current().isJava9Compatible) {
+        (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
+    }
+    val javadocOptions = options as CoreJavadocOptions
+    javadocOptions.addStringOption("source", "21")
+}
 
-
-
+// for reproducible builds
+tasks.withType<AbstractArchiveTask>().configureEach {
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    dirMode = 775
+    fileMode = 664
+    archiveVersion.set("${project.version}")
+}
