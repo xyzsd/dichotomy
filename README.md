@@ -74,8 +74,18 @@ statements and with pattern matching.
 
 
 ## Updates 
-The 1.0 version (January 2024) has been extensively refactored 
-and improved from the original version. 
+### Branch 1.1 (August 2024, not yet released)
+JSR-305 nullness annotations have been replaced with JSpecify 1.0, reducing annotation clutter. 
+Note that this could potentially pose problems given 
+[issues prior to JDK 22](https://jspecify.dev/docs/whether/#annotation-processors). Note that
+runtime nullness checks (via Objects.requireNonNull) have not been removed.  
+
+The 1.1 branch also adds `Result::merge` which simplified reduction operations on Streams of 
+Result values (see documentation and/or tests).
+
+
+### Release 1.0 (January 2024)
+Refactored and improved from the original version. 
 
 Handling exceptions is substantially better with the new
 `Try` type (a specialized type of `Result`), which also
