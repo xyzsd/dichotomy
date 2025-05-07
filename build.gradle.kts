@@ -51,7 +51,6 @@ java {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 
-
     // withJavadocJar()
     // withSourcesJar()
 }
