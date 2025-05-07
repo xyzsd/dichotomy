@@ -28,10 +28,10 @@ plugins {
 
 
 group = "net.xyzsd"
-version = "1.1"
+version = "2.0-SNAPSHOT"
 // versions ending with "-SNAPSHOT" will end up at:
 // https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/net/xyzsd/dichotomy/
-//
+// Version 2.0 targets JDK 24 (the previous version, 1.1, targeted JDK 21)
 
 repositories {
     mavenCentral()
@@ -40,14 +40,14 @@ repositories {
 
 dependencies {
     api("org.jspecify:jspecify:1.0.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(24))
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 
@@ -68,7 +68,7 @@ tasks.test {
 tasks.javadoc {
     val javadocOptions = options as CoreJavadocOptions
     //javadocOptions.addBooleanOption("-enable-preview", true)
-    javadocOptions.addStringOption("source", "21")
+    javadocOptions.addStringOption("source", "24")
     javadocOptions.addStringOption("Xdoclint:none", "-quiet")   // for sanity
     javadocOptions.addBooleanOption("html5", true)
 }
@@ -146,7 +146,3 @@ signing {
         project.logger.lifecycle("Signing: Using local credentials.")
     }
 }
-
-
-
-
