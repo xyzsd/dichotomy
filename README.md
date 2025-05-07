@@ -10,6 +10,8 @@ pattern matching.
 
 `dichotomy` is svelte, at about 48 KB.
 
+
+
 ### `Either`:
 A general immutable type that can only be *either* one of two types.
 The types are called `Left<L>` and `Right<R>`. By convention, the Left type
@@ -18,7 +20,7 @@ indicates failure, while the Right type indicates success.
 ### `Result`:
 Similar to an `Either`, but with success/failure semantics more clearly defined.
 An `OK<V>` Result indicates success, and an `Err<E>` Result indicates failure. Failure
-types do not need to be Exceptions. 
+types *do not* need to be Exceptions. 
 
  ```java 
 
@@ -77,10 +79,14 @@ statements and with pattern matching.
 
 ## Updates 
 
-Note that that future versions will target JDK 24, because of JEP-485 (Stream Gatherers) finalization. 
-An experimental `ResultStream<V,E>` which can directly operate on `Results` will be the new feature. 
+As always, any feature requests or improvements are always welcome.
 
-Of course, any feature requests or improvements are always welcome.
+### v2.0_experimental branch (May 2025)
+This branch targets JDK 24 with JEP-485 (Stream Gatherers) finalization. 
+
+An experimental `ResultStream<V,E>` which can directly operate on `Results` is the new feature, 
+using gatherers defined in `ResultGatherers`. 
+
 
 ### Release 1.1 (May 2025)
 Target remains JDK 21.
