@@ -28,7 +28,7 @@ plugins {
 
 
 group = "net.xyzsd"
-version = "1.1-SNAPSHOT"
+version = "1.1"
 // versions ending with "-SNAPSHOT" will end up at:
 // https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/net/xyzsd/dichotomy/
 //
@@ -76,8 +76,8 @@ tasks.javadoc {
 
 // for reproducible builds
 tasks.jar {
-    setPreserveFileTimestamps(false);
-    setReproducibleFileOrder(true);
+    setPreserveFileTimestamps(false)
+    setReproducibleFileOrder(true)
 }
 
 // secrets: see
@@ -99,7 +99,7 @@ mavenPublishing {
     signAllPublications()
 
     pom {
-        coordinates("net.xyzsd.dichotomy", "dichotomy", version as String)
+        coordinates("net.xyzsd", "dichotomy", version as String)
 
         name.set("dichotomy")
         description.set("Result, Try, Maybe, and Either monads for Java")
@@ -136,7 +136,7 @@ mavenPublishing {
 }
 
 signing {
-    val githubCI: Boolean = "true".equals(System.getenv("CI")) || false;
+    val githubCI: Boolean = "true".equals(System.getenv("CI")) || false
     if (githubCI) {
         project.logger.lifecycle("Signing: Using Github environment.")
         val signingKey: String? = System.getenv("SIGNING_KEY_PRIVATE")

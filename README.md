@@ -74,13 +74,13 @@ statements and with pattern matching.
 
 
 ## Updates 
-### Branch 1.1 (August 2024, not yet released)
-JSR-305 nullness annotations have been replaced with JSpecify 1.0, reducing annotation clutter. 
-Note that this could potentially pose problems given 
-[issues prior to JDK 22](https://jspecify.dev/docs/whether/#annotation-processors). 
-Runtime nullness checks (via Objects.requireNonNull) have not been removed.  
 
-The 1.1 branch also adds `Result::merge` which simplifies reduction operations on `Result` streams 
+### Release 1.1 (May 2025)
+Target remains JDK 21.
+
+[JSpecify](https://jspecify.dev/) replaces JSR-305 nullness annotations. 
+
+This release also adds `Result::merge` which simplifies reduction operations on `Result` streams 
 (see method documentation and tests for examples).
 
 
@@ -107,14 +107,14 @@ depend via Maven:
 <dependency>
   <groupId>net.xyzsd</groupId>
   <artifactId>dichotomy</artifactId>
-  <version>1.0</version>
+  <version>1.1</version>
   <type>module</type>
 </dependency>
 ```
 
 or Gradle:
 ```kotlin
-implementation("net.xyzsd:dichotomy:1.0")
+implementation("net.xyzsd:dichotomy:1.1")
 ```
 
 or [download](https://github.com/xyzsd/dichotomy/releases/tag/1.0) from GitHub.
