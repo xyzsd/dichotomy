@@ -8,7 +8,7 @@ Generally these types are used to return one of two values, such as success or f
 All types are sealed (Sum types), and can be used in `switch` expressions and with
 pattern matching.
 
-`dichotomy` is svelte, at about ~48 KB.
+`dichotomy` is svelte, at about 48 KB.
 
 ### `Either`:
 A general immutable type that can only be *either* one of two types.
