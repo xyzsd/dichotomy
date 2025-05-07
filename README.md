@@ -8,6 +8,8 @@ Generally these types are used to return one of two values, such as success or f
 All types are sealed (Sum types), and can be used in `switch` expressions and with
 pattern matching.
 
+`dichotomy` is svelte, at about ~48 KB.
+
 ### `Either`:
 A general immutable type that can only be *either* one of two types.
 The types are called `Left<L>` and `Right<R>`. By convention, the Left type
@@ -75,6 +77,11 @@ statements and with pattern matching.
 
 ## Updates 
 
+Note that that future versions will target JDK 24, because of JEP-485 (Stream Gatherers) finalization. 
+An experimental `ResultStream<V,E>` which can directly operate on `Results` will be the new feature. 
+
+Of course, any feature requests or improvements are always welcome.
+
 ### Release 1.1 (May 2025)
 Target remains JDK 21.
 
@@ -121,7 +128,7 @@ or [download](https://github.com/xyzsd/dichotomy/releases/tag/1.0) from GitHub.
 
 License
 -------
-Copyright 2022-2024, xyzsd
+Copyright 2022-2025, xyzsd
 
 Many thanks to [@fdelsert](https://github.com/fdelsert) for
 suggestions and improvements leading to the 1.0 release.
@@ -136,6 +143,6 @@ Licensed under either of:
 at your option.
 
 
-[doc_online]: https://javadoc.io/doc/net.xyzsd/dichotomy/1.0/index.html
-[doc_download]: https://github.com/xyzsd/dichotomy/releases/download/1.0/dichotomy-1.0-javadoc.jar
+[doc_online]: https://javadoc.io/doc/net.xyzsd/dichotomy/1.1/index.html
+[doc_download]: https://github.com/xyzsd/dichotomy/releases/download/1.1/dichotomy-javadoc-1.1-javadoc.jar
 
