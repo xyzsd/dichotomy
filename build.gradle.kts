@@ -18,11 +18,11 @@
  */
 import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
-import com.vanniktech.maven.publish.SonatypeHost
+import com.vanniktech.maven.publish.SourcesJar
 
 plugins {
     id("java-library")
-    id("com.vanniktech.maven.publish") version "0.31.0"
+    id("com.vanniktech.maven.publish") version "0.36.0"
     id("signing")
 }
 
@@ -94,16 +94,23 @@ tasks.jar {
 //  ORG_GRADLE_PROJECT_mavenCentralPassword=[token password, also generated]
 //
 mavenPublishing {
-    configure(JavaLibrary(JavadocJar.Javadoc(), true))
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    project.logger.lifecycle("Publishing: Coordinates: " + project.group + ":" + project.name + ":" + project.version)
+    publishToMavenCentral(automaticRelease = false)
     signAllPublications()
 
+    configure(JavaLibrary(
+        javadocJar = JavadocJar.Javadoc(),
+        sourcesJar = SourcesJar.Sources()
+    ))
+
+    coordinates(groupId = project.group as String, project.name, project.version as String)
+
     pom {
-        coordinates("net.xyzsd", "dichotomy", version as String)
 
         name.set("dichotomy")
         description.set("Result, Try, Maybe, and Either monads for Java")
         url.set("https://maven.pkg.github.com/xyzsd/dichotomy")
+        inceptionYear.set("2022")
 
         licenses {
             license {
